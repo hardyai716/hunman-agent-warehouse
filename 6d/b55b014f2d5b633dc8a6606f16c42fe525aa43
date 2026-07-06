@@ -1,0 +1,402 @@
+README.md
+  s_6c897fa8fbf3cf::t_3dea4534934133 97-105,107-110 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4bcdcea8f11b44dc73b32f","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[97,105]},{"Range":[107,110]}]}]}
+  s_6c897fa8fbf3cf::t_895266a60ad580 106 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4bce26a8f11b44dc73b409","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":106}]}]}
+通用能力/anomaly-touch/scripts/test_report_publisher.py
+  s_6c897fa8fbf3cf::t_1df9ca06d3587f 16,247-318 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4bcd1ca8f11b44dc73b27a","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":16},{"Range":[247,318]}]}]}
+  s_6c897fa8fbf3cf::t_236ba37b91fbeb 319
+通用能力/anomaly-touch/scripts/event_touch_sender.py
+  s_6c897fa8fbf3cf::t_de1910593ae03c 128 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4bcd3da8f11b44dc73b2b1","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":128}]}]}
+  s_6c897fa8fbf3cf::t_4c597925ee5500 1-127,129-379 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4bccc6a8f11b44dc73b201","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[1,127]},{"Range":[129,379]}]}]}
+AGENT_PLATFORM_UPLOAD.md
+  s_6c897fa8fbf3cf::t_d62adf99d56886 158-166,168-171 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4bcdd7a8f11b44dc73b353","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[158,166]},{"Range":[168,171]}]}]}
+  s_6c897fa8fbf3cf::t_2af9cf2bf2fd39 167 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4bce2ea8f11b44dc73b430","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":167}]}]}
+通用能力/anomaly-touch/SKILL.md
+  s_6c897fa8fbf3cf::t_73323585280b23 155 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4bce01a8f11b44dc73b3b7","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":155}]}]}
+  s_6c897fa8fbf3cf::t_cdcb8bad112dd9 5,7,144-154,156-168 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4bcdc1a8f11b44dc73b2fa","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":5},{"Single":7},{"Range":[144,154]},{"Range":[156,168]}]}]}
+  s_6c897fa8fbf3cf::t_f31ae3f8cbbb55 169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "6db55b014f2d5b633dc8a6606f16c42fe525aa43",
+  "prompts": {},
+  "sessions": {
+    "s_6c897fa8fbf3cf": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a4a307c5e1e3944953e79fa",
+        "model": "gpt-5.5__max"
+      },
+      "human_author": "IDA Skill Maintainer <ida-skill-maintainer@example.com>"
+    }
+  },
+  "attestation_metadata": {
+    "AGENT_PLATFORM_UPLOAD.md": [
+      {
+        "hash": "s_6c897fa8fbf3cf::t_d62adf99d56886",
+        "line_ranges": [
+          {
+            "Range": [
+              158,
+              166
+            ]
+          },
+          {
+            "Range": [
+              168,
+              171
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4bcdd7a8f11b44dc73b353",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  158,
+                  166
+                ]
+              },
+              {
+                "Range": [
+                  168,
+                  171
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "hash": "s_6c897fa8fbf3cf::t_2af9cf2bf2fd39",
+        "line_ranges": [
+          {
+            "Single": 167
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4bce2ea8f11b44dc73b430",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 167
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "README.md": [
+      {
+        "hash": "s_6c897fa8fbf3cf::t_3dea4534934133",
+        "line_ranges": [
+          {
+            "Range": [
+              97,
+              105
+            ]
+          },
+          {
+            "Range": [
+              107,
+              110
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4bcdcea8f11b44dc73b32f",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  97,
+                  105
+                ]
+              },
+              {
+                "Range": [
+                  107,
+                  110
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "hash": "s_6c897fa8fbf3cf::t_895266a60ad580",
+        "line_ranges": [
+          {
+            "Single": 106
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4bce26a8f11b44dc73b409",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 106
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "通用能力/anomaly-touch/SKILL.md": [
+      {
+        "hash": "s_6c897fa8fbf3cf::t_73323585280b23",
+        "line_ranges": [
+          {
+            "Single": 155
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4bce01a8f11b44dc73b3b7",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 155
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "hash": "s_6c897fa8fbf3cf::t_cdcb8bad112dd9",
+        "line_ranges": [
+          {
+            "Single": 5
+          },
+          {
+            "Single": 7
+          },
+          {
+            "Range": [
+              144,
+              154
+            ]
+          },
+          {
+            "Range": [
+              156,
+              168
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4bcdc1a8f11b44dc73b2fa",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 5
+              },
+              {
+                "Single": 7
+              },
+              {
+                "Range": [
+                  144,
+                  154
+                ]
+              },
+              {
+                "Range": [
+                  156,
+                  168
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "通用能力/anomaly-touch/scripts/event_touch_sender.py": [
+      {
+        "hash": "s_6c897fa8fbf3cf::t_de1910593ae03c",
+        "line_ranges": [
+          {
+            "Single": 128
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4bcd3da8f11b44dc73b2b1",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 128
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "hash": "s_6c897fa8fbf3cf::t_4c597925ee5500",
+        "line_ranges": [
+          {
+            "Range": [
+              1,
+              127
+            ]
+          },
+          {
+            "Range": [
+              129,
+              379
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4bccc6a8f11b44dc73b201",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  1,
+                  127
+                ]
+              },
+              {
+                "Range": [
+                  129,
+                  379
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "通用能力/anomaly-touch/scripts/test_report_publisher.py": [
+      {
+        "hash": "s_6c897fa8fbf3cf::t_1df9ca06d3587f",
+        "line_ranges": [
+          {
+            "Single": 16
+          },
+          {
+            "Range": [
+              247,
+              318
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4bcd1ca8f11b44dc73b27a",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 16
+              },
+              {
+                "Range": [
+                  247,
+                  318
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_6c897fa8fbf3cf": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_1df9ca06d3587f": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_2af9cf2bf2fd39": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_3dea4534934133": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_4c597925ee5500": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_73323585280b23": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_895266a60ad580": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_cdcb8bad112dd9": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_d62adf99d56886": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_de1910593ae03c": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
