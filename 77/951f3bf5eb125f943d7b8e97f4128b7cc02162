@@ -1,0 +1,107 @@
+通用能力/monitoring-orchestrator/SKILL.md
+  s_6c897fa8fbf3cf::t_085776c21fe710 5,8,15,22,42-53,58-59 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4bcb4da8f11b44dc73b0df","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":5},{"Single":8},{"Single":15},{"Single":22},{"Range":[42,53]},{"Range":[58,59]}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "77951f3bf5eb125f943d7b8e97f4128b7cc02162",
+  "prompts": {},
+  "humans": {
+    "h_69a5ec08536e6a": {
+      "author": "IDA Skill Maintainer <ida-skill-maintainer@example.com>"
+    }
+  },
+  "sessions": {
+    "s_6c897fa8fbf3cf": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a4a307c5e1e3944953e79fa",
+        "model": "gpt-5.5__max"
+      },
+      "human_author": "IDA Skill Maintainer <ida-skill-maintainer@example.com>"
+    }
+  },
+  "attestation_metadata": {
+    "通用能力/monitoring-orchestrator/SKILL.md": [
+      {
+        "hash": "s_6c897fa8fbf3cf::t_085776c21fe710",
+        "line_ranges": [
+          {
+            "Single": 5
+          },
+          {
+            "Single": 8
+          },
+          {
+            "Single": 15
+          },
+          {
+            "Single": 22
+          },
+          {
+            "Range": [
+              42,
+              53
+            ]
+          },
+          {
+            "Range": [
+              58,
+              59
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4bcb4da8f11b44dc73b0df",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 5
+              },
+              {
+                "Single": 8
+              },
+              {
+                "Single": 15
+              },
+              {
+                "Single": 22
+              },
+              {
+                "Range": [
+                  42,
+                  53
+                ]
+              },
+              {
+                "Range": [
+                  58,
+                  59
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_6c897fa8fbf3cf": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_085776c21fe710": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
