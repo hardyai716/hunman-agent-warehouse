@@ -1,0 +1,210 @@
+通用能力/review-monitoring-shared/references/dry_run_pitfalls.md
+  s_6c897fa8fbf3cf::t_9436ec3f80521a 14 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4b4daca8f11b44dc73877d","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":14}]}]}
+  s_6c897fa8fbf3cf::t_4a6e073619300e 11-13
+  s_6c897fa8fbf3cf::t_2275c465a3067b 15-17
+通用能力/review-monitoring-shared/SKILL.md
+  s_6c897fa8fbf3cf::t_03592b94ec0bad 42-48 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4b4d81a8f11b44dc7386e8","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[42,48]}]}]}
+  s_6c897fa8fbf3cf::t_247db885456dc1 39-41
+  s_6c897fa8fbf3cf::t_52ceedf10cd903 49-51
+通用能力/review-monitoring-shared/references/base_schema.md
+  s_6c897fa8fbf3cf::t_5159843085a1eb 3 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4b4d88a8f11b44dc738717","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":3}]}]}
+  s_6c897fa8fbf3cf::t_24f602c7980093 1-2
+  s_6c897fa8fbf3cf::t_291eeb09fbd52b 4-6
+多Skill解耦架构方案.md
+  s_6c897fa8fbf3cf::t_98db76b5ffc927 182 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4b4da5a8f11b44dc738753","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":182}]}]}
+  s_6c897fa8fbf3cf::t_840f12643349e4 172 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4b4d78a8f11b44dc7386be","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":172}]}]}
+  s_6c897fa8fbf3cf::t_fa59a29238aaa3 169-171
+  s_6c897fa8fbf3cf::t_6b00b5cbf1389f 173-175,179-181
+  s_6c897fa8fbf3cf::t_0392b197f6783e 183-185
+通用能力/owner-routing/references/owner_routing.md
+  s_ec2ceecf0f306e::t_70885c747c75ca 1-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "5e16f6a96fd200e48f5752f0c6a7b80feff8a98a",
+  "prompts": {},
+  "sessions": {
+    "s_6c897fa8fbf3cf": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a4a307c5e1e3944953e79fa",
+        "model": "gpt-5.5__max"
+      },
+      "human_author": "IDA Skill Maintainer <ida-skill-maintainer@example.com>"
+    },
+    "s_ec2ceecf0f306e": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a472bb95e1e3944953e66a8",
+        "model": "gpt-5.5__max"
+      },
+      "human_author": "IDA Skill Maintainer <ida-skill-maintainer@example.com>"
+    }
+  },
+  "attestation_metadata": {
+    "多Skill解耦架构方案.md": [
+      {
+        "hash": "s_6c897fa8fbf3cf::t_98db76b5ffc927",
+        "line_ranges": [
+          {
+            "Single": 182
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4b4da5a8f11b44dc738753",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 182
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "hash": "s_6c897fa8fbf3cf::t_840f12643349e4",
+        "line_ranges": [
+          {
+            "Single": 172
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4b4d78a8f11b44dc7386be",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 172
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "通用能力/review-monitoring-shared/SKILL.md": [
+      {
+        "hash": "s_6c897fa8fbf3cf::t_03592b94ec0bad",
+        "line_ranges": [
+          {
+            "Range": [
+              42,
+              48
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4b4d81a8f11b44dc7386e8",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  42,
+                  48
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "通用能力/review-monitoring-shared/references/base_schema.md": [
+      {
+        "hash": "s_6c897fa8fbf3cf::t_5159843085a1eb",
+        "line_ranges": [
+          {
+            "Single": 3
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4b4d88a8f11b44dc738717",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 3
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "通用能力/review-monitoring-shared/references/dry_run_pitfalls.md": [
+      {
+        "hash": "s_6c897fa8fbf3cf::t_9436ec3f80521a",
+        "line_ranges": [
+          {
+            "Single": 14
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4b4daca8f11b44dc73877d",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 14
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_6c897fa8fbf3cf": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_03592b94ec0bad": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_5159843085a1eb": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_840f12643349e4": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_9436ec3f80521a": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_6c897fa8fbf3cf::t_98db76b5ffc927": {
+      "tool": "trae",
+      "conversation_id": "6a4a307c5e1e3944953e79fa",
+      "session_id": "6a4a307c5e1e3944953e79fa",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
