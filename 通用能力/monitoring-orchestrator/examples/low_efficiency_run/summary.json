@@ -1,0 +1,21 @@
+{
+  "schema_version": "process_output.v1",
+  "dataset_id": "sample_low_efficiency_dataset",
+  "region": "sample",
+  "window": {
+    "cur_start": "2026-06-29",
+    "cur_end": "2026-07-05",
+    "prev_start": "2026-06-22",
+    "prev_end": "2026-06-28"
+  },
+  "fallback_reason": "fixed_smoke_fixture",
+  "levels": {
+    "P0": {"row_count": 0},
+    "P1": {"row_count": 0},
+    "P2": {"row_count": 2},
+    "notice": {"row_count": 0}
+  },
+  "outputs": {
+    "summary_csv": "综合.csv"
+  }
+}

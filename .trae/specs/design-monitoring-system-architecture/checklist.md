@@ -1,0 +1,64 @@
+- [x] 已明确旧 `human-review-monitoring` 各能力到新分层架构的映射，不存在未归属的核心流程
+- [x] 已区分多维表格字段的四类职责：运营可配、Agent 回写、系统派生、禁止配置
+- [x] 已明确系统一级业务对象是 SOP，而不是单个指标
+- [x] 已评估现有 9 张表的保留、增强、重命名、废弃策略
+- [x] 已定义 SOP 注册表、SOP 节点表、SOP 规则组表、SOP 等级字典表、SOP 角色目录表、业务对象责任映射表、Owner Source 注册表、SOP 运行实例表、Process Skill 注册表、Report Template 注册表
+- [x] 已明确等级标签与 SOP 强绑定，系统不假设全局 P0/P1/P2/notice 枚举
+- [x] 已定义 `normalized_severity` 仅用于跨 SOP 排序和展示，不替代 SOP 自己的 `level_label`
+- [x] 已定义规则组、责任路由、触达模板均通过 `(sop_id, sop_level_id)` 解析等级配置
+- [x] 已定义一条监控配置驱动 Agent 串联所需的最小字段集合
+- [x] 已明确哪些内容不能配置化，包括执行代码、安全 gate、未注册 Skill、密钥和临时 open_id/chat_id
+- [x] 已明确责任路由按业务对象粒度解析，而不是只按指标和等级匹配
+- [x] 已覆盖低效打标策略 `reason/策略 -> owner` 的路由模型，不同 reason 可对应不同负责人
+- [x] 已覆盖审核延时 SOP `queue/group/scene -> owner` 的路由模型
+- [x] 已定义 Owner Source 注册机制，支持多维表格映射和注册查询逻辑，并禁止运营直接配置任意 SQL
+- [x] 已定义 `route_result` 标准输出，能够把每条结果与业务 POC、owner_source、route_grain、chat_strategy 关联起来
+- [x] 已定义默认群聊触达策略：复用对象群或 SOP 群，并在群内 mention 对应 POC
+- [x] 已定义个人触达和紧急/持续未处理时临时建群策略
+- [x] 已定义多条结果对应不同 POC 时的拆分/合并触达规则
+- [x] 已定义 missing_object_owner 的停止或兜底策略
+- [x] 已定义 `monitoring-orchestrator` 的职责边界，不包含业务阈值、业务 SQL 和触达实现
+- [x] 已定义 process skill 的标准输入输出契约，并能覆盖 `low-efficiency-strategy-analysis` 已跑通的 grading、level detail、dimension breakdown
+- [x] 已定义 `review-latency-analysis` 的 process skill 契约
+- [x] 已覆盖审核延时 SOP 的 P2/P1/P0 规则配置：进审增幅、机审增幅、实时延时、预计全天进审、目标值、连续 10min 窗口
+- [x] 已定义 SOP 角色目录如何解析治理 BP、审核 VOC POC、人审运营、交付调度负责人、VOC 负责人、群组负责人、CQC 负责人
+- [x] 已定义报告发布与正式触达的边界，避免把 report publishing 与事件触达记录混为一体
+- [x] 已定义配置 lint、dry-run 和 validation report 的检查项
+- [x] 已定义旧单体 Skill 到新多 Skill 架构的迁移阶段和验收样例
+- [x] 已覆盖至少 4 个用例：低效策略 P2、机审一级标签 × reason 维度拆解、审核延时 SOP、未来质量域自动处置准确率
+- [x] 已定义当前已跑通 baseline，不允许新架构改造覆盖或破坏 baseline
+- [x] 已定义代码版本回滚方案，包括 Git tag、稳定分支和回滚提交策略
+- [x] 已定义 Skill 上传包回滚方案，包括上一稳定 zip、manifest 版本和重新上传步骤
+- [x] 已定义飞书多维表格配置回滚方案，包括 schema 快照、数据快照和配置版本字段
+- [x] 已定义运行入口回滚方案，包括 baseline、shadow、canary、active、rollback 模式
+- [x] 已定义 smoke test 基线，覆盖 P2 查询、全等级查询、维度拆解、report publishing 和卡片发送
+- [x] 已定义新链路失败时的停止规则，确保不写坏事件表、不覆盖 baseline 产物、不误触达
+- [x] 所有方案均符合 Claude data-agent 三层架构：Universal Warehouse Skill、Domain Knowledge Reference、Process Skill
+- [x] 方案不要求上传包声明外部平台能力为项目内 sibling
+- [x] SOP-first 样例配置能通过 `config_linter.py` 输出 `validation_report.v1` 且无 error/blocker
+- [x] `config_linter.py` 能阻断未注册 process skill、跨 SOP 等级、shadow 自动发送和外部依赖误写 sibling
+- [x] report policy 入口能 dry-run 渲染低效策略报告，且不破坏原 `publish_lark_report.py --report-type` CLI
+- [x] owner-routing MVP 能按 `reason` 输出不同 owner，并对 missing owner 返回 `missing_object_owner=true`
+- [x] monitoring-orchestrator MVP 能以 report-only/shadow 生成 validation、audit、run summary、report card 和 route preview
+- [x] monitoring-orchestrator shadow 对比能输出 `shadow_comparison.json`，覆盖行数、Top reason、等级计数和差异摘要
+- [x] 固定 smoke fixture 不含真实 token/open_id/chat_id，并可重复验证低效策略 SOP-first report-only/shadow 链路
+- [x] 上传包包含 6 个单 Skill zip，均有根级 `SKILL.md`，且测试文件被排除
+- [x] 文档状态与实现一致，不再遗留“5 个包”或“orchestrator 暂缓”的过期描述
+- [x] 存在一键最终验收命令，能串联当前所有关键单测、配置 lint、warehouse offline eval、低效策略 smoke、orchestrator shadow 验证和打包命令
+- [x] 最终验收命令将临时运行产物写入独立目录，不覆盖 baseline fixture、历史分析结果或用户已有文件
+- [x] 最终验收命令输出机器可读摘要，包含每个检查项的 pass/fail、命令、耗时、关键产物和失败原因
+- [x] 上传包审计覆盖 6 个单 Skill zip，确认每个 zip 根目录存在 `SKILL.md` 且 frontmatter `name` 与 zip 名称一致
+- [x] 上传包审计能阻断测试脚本、缓存文件、历史产物、真实 token/open_id/chat_id、源码分类路径残留和外部平台能力误写 sibling
+- [x] 上传包审计能检查 Markdown/JSON 相对路径引用，确保上传包内不存在指向缺失文件的本地相对链接
+- [x] `README.md` 说明最终验收命令、6 个 Skill 模块、离线安全边界和主要交付产物路径
+- [x] `AGENT_PLATFORM_UPLOAD.md` 说明最终验收命令、zip 审计要求和 6 个单 Skill 包上传顺序
+- [x] 最终验收脚本实际运行通过，且 `tasks.md`、`checklist.md`、`progress.md` 完成本轮闭环
+- [x] 存在生产化预检命令，能够输出机器可读 readiness summary
+- [x] 生产化预检在最终验收失败、任务/检查清单未完成、上传包不完整或关键文档缺失时返回非 0
+- [x] 生产化预检保持离线安全边界，不发送 Lark、不查询 Aeolus、不写事件主表、不覆盖 baseline fixture
+- [x] `canary`/`active` 等 live 模式在未显式生产授权时会被阻断，并返回可行动错误信息
+- [x] `report_only`/`shadow` 安全链路不受 live-mode guard 影响
+- [x] readiness summary 明确标注真实 Lark/Aeolus 副作用、平台上传和生产事件写入仍需人工或平台侧动作
+- [x] 最终验收入口已纳入生产化预检和 live-mode guard 结果
+- [x] `README.md` 与 `AGENT_PLATFORM_UPLOAD.md` 已说明生产化预检命令、live-mode guard 和人工交接边界
+- [x] 最终验收命令重新运行通过，且新任务与检查点完成闭环

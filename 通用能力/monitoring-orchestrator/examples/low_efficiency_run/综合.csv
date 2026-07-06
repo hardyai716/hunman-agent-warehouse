@@ -1,0 +1,3 @@
+_level,reason,avg_jinshen,avg_wanshen,avg_dabiao,ratio_val,hit_condition
+P2,N1_chuxing_model_llm_pe_review,120,108,6,0.0556,labeling_rate < 0.1 AND avg_review_in >= 100
+P2,unmapped_reason_for_smoke,135,121,4,0.0331,labeling_rate < 0.1 AND avg_review_in >= 100

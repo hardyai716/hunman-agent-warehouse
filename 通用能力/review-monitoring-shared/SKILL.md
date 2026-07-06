@@ -41,6 +41,8 @@ requires:
 |---|---|---|
 | 配置中心 & 9 表 schema | [references/base_schema.md](references/base_schema.md) | base_token=`<BASE_TOKEN>`；数据源/指标注册/撞线规则/等级字典/责任路由/触达模板/触达记录/事件/案例沉淀 9 张表完整字段结构 |
 | 卡片一致性校验脚本 | [scripts/card_validator.py](scripts/card_validator.py) | 命中数据顺序无关 SHA256、`embed_hash_in_card` 写入 `_meta._data_hash`、发送前三重硬校验（哈希/等级/chat_id 一致）。 |
+| SOP-first 配置校验脚本 | [scripts/config_linter.py](scripts/config_linter.py) | 校验 SOP 注册、等级字典、process/report registry、Owner Source、route grain、shadow 自动发送红线，并输出 `validation_report.v1`。 |
+| 低效策略 SOP 样例配置 | [examples/low_efficiency_sop_config.sample.json](examples/low_efficiency_sop_config.sample.json) | 可用于 `monitoring-orchestrator` report-only/shadow MVP 的样例配置，覆盖 process registry、report policy、Owner Source 和低效策略 SOP。 |
 | 跑批踩坑规避清单 | [references/dry_run_pitfalls.md](references/dry_run_pitfalls.md) | 首次端到端干运行复盘的坑规避动作 + 环境/配置/数据/SQL/取数/字段/dry_run/门禁八道 gate |
 
 ## 配置中心（飞书多维表格）
@@ -88,3 +90,16 @@ requires:
 
 - 本 skill **只提供公共资产**：schema、校验脚本、通用红线、配置中心索引。
 - **不含**任何指标口径、阈值、SQL 模板、分级规则、路由/触达/编排逻辑——这些分别归纵向业务 skill 与横向能力 skill。
+
+## SOP-first 配置校验入口
+
+新编排链路在执行任何 process skill 或触达前，必须先运行配置校验：
+
+```bash
+python3 scripts/config_linter.py \
+  --config examples/low_efficiency_sop_config.sample.json \
+  --mode shadow \
+  --sop-id low_efficiency_labeling
+```
+
+通过条件：`summary.status=passed`。若输出 blocker/error，编排层必须停止在 `config_lint`，不得继续取数、发布或触达。

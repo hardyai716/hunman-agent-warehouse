@@ -1,0 +1,263 @@
+{
+  "schema_version": "sop_config.v1",
+  "process_skill_registry": [
+    {
+      "process_skill": "low-efficiency-strategy-analysis",
+      "business_domain": "efficiency",
+      "supported_sop_types": ["low_efficiency_labeling"],
+      "supported_report_types": [
+        "low_efficiency_dimension_breakdown",
+        "low_efficiency_grading",
+        "low_efficiency_level_detail"
+      ],
+      "required_domain_reference": "efficiency_domain",
+      "required_siblings": ["warehouse-skill"],
+      "runtime_tool_dependencies": ["bytedance-aeolus", "lark-sheets", "lark-im"],
+      "validation_command": "python3 scripts/test_sql_templates.py",
+      "input_contract": {
+        "required_fields": ["period_start", "period_end", "data_source_id", "rule_group_id"]
+      },
+      "output_contract": {
+        "schema_version": "process_output.v1",
+        "route_grains": ["reason", "strategy"],
+        "level_field": "_level",
+        "required_files_by_report_type": {
+          "low_efficiency_grading": ["summary.json", "综合.csv"],
+          "low_efficiency_level_detail": ["summary.json", "{level}.csv"],
+          "low_efficiency_dimension_breakdown": [
+            "summary.json",
+            "sheet1_mach_label_reason_detail.csv",
+            "sheet2_mach_label_summary.csv"
+          ]
+        }
+      }
+    }
+  ],
+  "report_template_registry": [
+    {
+      "report_type": "low_efficiency_grading",
+      "template_name": "low_efficiency_grading_report",
+      "scene": "report_card",
+      "local_template_name": "low_efficiency_grading_report.card_template.json",
+      "required_artifacts": ["summary.json", "综合.csv"],
+      "required_variables": ["sop_name", "period", "summary_metrics", "top_items", "sheet_url"],
+      "enabled": true
+    },
+    {
+      "report_type": "low_efficiency_level_detail",
+      "template_name": "low_efficiency_level_detail",
+      "scene": "report_card",
+      "local_template_name": "low_efficiency_level_detail.card_template.json",
+      "required_artifacts": ["summary.json", "{level}.csv"],
+      "required_variables": ["sop_name", "period", "level_label", "top_items", "sheet_url"],
+      "enabled": true
+    },
+    {
+      "report_type": "low_efficiency_dimension_breakdown",
+      "template_name": "low_efficiency_dimension_report",
+      "scene": "report_card",
+      "local_template_name": "low_efficiency_dimension_report.card_template.json",
+      "required_artifacts": [
+        "summary.json",
+        "sheet1_mach_label_reason_detail.csv",
+        "sheet2_mach_label_summary.csv"
+      ],
+      "required_variables": ["sop_name", "period", "summary_metrics", "top_items", "sheet_url"],
+      "enabled": true
+    }
+  ],
+  "owner_source_registry": [
+    {
+      "owner_source_id": "reason_owner_mapping",
+      "sop_id": "low_efficiency_labeling",
+      "route_grain": "reason",
+      "source_type": "inline_mapping",
+      "source_ref": "examples.low_efficiency.reason_owner_mapping",
+      "key_field": "route_key",
+      "owner_fields": ["owner_user", "collaborators", "escalation_users", "default_chat_id"],
+      "fallback_policy": "missing_owner_only",
+      "freshness_policy": "sample_static",
+      "enabled": true,
+      "mappings": [
+        {
+          "route_key": "N1_chuxing_model_llm_pe_review",
+          "route_key_alias": "出行模型 LLM PE 审核",
+          "owner_role": "业务 POC",
+          "owner_user": {"id": "ou_owner_a", "name": "负责人A"},
+          "collaborators": [{"id": "ou_ops_a", "name": "人审运营A"}],
+          "escalation_users": [{"id": "ou_manager_a", "name": "治理负责人A"}],
+          "default_chat_id": "oc_reason_a",
+          "default_chat_name": "低效策略-reason-A",
+          "enabled": true,
+          "priority": 10
+        },
+        {
+          "route_key": "political_figure_risk_review",
+          "route_key_alias": "领导人风险审核",
+          "owner_role": "业务 POC",
+          "owner_user": {"id": "ou_owner_b", "name": "负责人B"},
+          "collaborators": [{"id": "ou_ops_a", "name": "人审运营A"}],
+          "escalation_users": [{"id": "ou_manager_b", "name": "治理负责人B"}],
+          "default_chat_id": "oc_reason_b",
+          "default_chat_name": "低效策略-reason-B",
+          "enabled": true,
+          "priority": 20
+        }
+      ]
+    }
+  ],
+  "sops": [
+    {
+      "sop_id": "low_efficiency_labeling",
+      "sop_name": "低效打标策略监控",
+      "sop_type": "low_efficiency_labeling",
+      "business_domain": "efficiency",
+      "owner_team": "人审运营",
+      "enabled": true,
+      "run_frequency": "manual",
+      "run_mode": "shadow",
+      "process_skill": "low-efficiency-strategy-analysis",
+      "domain_reference": "efficiency_domain",
+      "default_report_type": "low_efficiency_grading",
+      "default_touch_policy": "report_only",
+      "state_policy": "shadow_summary_only",
+      "nodes": [
+        {"node_type": "config_load", "node_order": 10, "enabled": true},
+        {"node_type": "config_lint", "node_order": 20, "enabled": true},
+        {"node_type": "data_ready_gate", "node_order": 30, "enabled": true},
+        {"node_type": "process_analysis", "node_order": 40, "enabled": true},
+        {"node_type": "report_publish", "node_order": 50, "enabled": true},
+        {"node_type": "audit_finalize", "node_order": 90, "enabled": true}
+      ],
+      "metrics": [
+        {
+          "metric_id": "metric_low_label_rate_reason",
+          "metric_name": "reason 粒度低打标率",
+          "metric_role": "primary",
+          "canonical_metric": "labeling_rate",
+          "data_source_id": "aeolus_3888816_review_detail",
+          "period_policy": "last_7_complete_days",
+          "enabled": true
+        }
+      ],
+      "levels": [
+        {
+          "sop_id": "low_efficiency_labeling",
+          "sop_level_id": "low_efficiency_p0",
+          "level_label": "P0",
+          "normalized_severity": "critical",
+          "priority_order": 1,
+          "sla_minutes": 0,
+          "sla_text": "立即响应",
+          "requires_human_confirm": true,
+          "default_audience_policy": "治理负责人+CQC负责人",
+          "enabled": true
+        },
+        {
+          "sop_id": "low_efficiency_labeling",
+          "sop_level_id": "low_efficiency_p1",
+          "level_label": "P1",
+          "normalized_severity": "high",
+          "priority_order": 2,
+          "sla_minutes": 120,
+          "sla_text": "2小时内响应",
+          "requires_human_confirm": true,
+          "default_audience_policy": "治理 BP+1、人审运营负责人",
+          "enabled": true
+        },
+        {
+          "sop_id": "low_efficiency_labeling",
+          "sop_level_id": "low_efficiency_p2",
+          "level_label": "P2",
+          "normalized_severity": "medium",
+          "priority_order": 3,
+          "sla_minutes": 240,
+          "sla_text": "4小时内响应",
+          "requires_human_confirm": false,
+          "default_audience_policy": "治理 BP、人审运营",
+          "enabled": true
+        },
+        {
+          "sop_id": "low_efficiency_labeling",
+          "sop_level_id": "low_efficiency_notice",
+          "level_label": "notice",
+          "normalized_severity": "low",
+          "priority_order": 4,
+          "sla_minutes": 1440,
+          "sla_text": "当天同步，纳入周报观察",
+          "requires_human_confirm": false,
+          "default_audience_policy": "人审运营",
+          "enabled": true
+        }
+      ],
+      "rule_groups": [
+        {
+          "rule_group_id": "rule_low_label_rate_p2",
+          "sop_level_id": "low_efficiency_p2",
+          "condition_logic": "labeling_rate < 0.1 AND avg_review_in >= 100",
+          "window_policy": "last_7_complete_days",
+          "metric_refs": ["metric_low_label_rate_reason"],
+          "rule_key": "rule_low_label_rate_p2",
+          "route_grain": "reason",
+          "audience_policy": "治理 BP、人审运营",
+          "enabled": true
+        }
+      ],
+      "report_policies": [
+        {
+          "report_policy_id": "low_efficiency_grading_report_only",
+          "report_type": "low_efficiency_grading",
+          "template_name": "low_efficiency_grading_report",
+          "sheet_policy": {
+            "strategy": "reuse_or_import",
+            "sheet_name_template": "{sop_name}-{period}-{report_type}"
+          },
+          "report_target_policy": {
+            "target_type": "runtime_override",
+            "target_ref": null,
+            "auto_send": false
+          },
+          "sender_identity": "bot",
+          "render_options": {"top_n": 10},
+          "idempotency_policy": {
+            "parts": ["sop_id", "report_type", "run_id"],
+            "max_length": 50
+          },
+          "enabled": true
+        },
+        {
+          "report_policy_id": "low_efficiency_p2_detail_report_only",
+          "report_type": "low_efficiency_level_detail",
+          "template_name": "low_efficiency_level_detail",
+          "level_selector": "P2",
+          "sheet_policy": {
+            "strategy": "reuse_or_import",
+            "sheet_name_template": "{sop_name}-{period}-{report_type}-P2"
+          },
+          "report_target_policy": {
+            "target_type": "runtime_override",
+            "target_ref": null,
+            "auto_send": false
+          },
+          "sender_identity": "bot",
+          "render_options": {"top_n": 10},
+          "idempotency_policy": {
+            "parts": ["sop_id", "report_type", "level", "run_id"],
+            "max_length": 50
+          },
+          "enabled": true
+        }
+      ],
+      "route_policies": [
+        {
+          "route_policy_id": "low_efficiency_reason_route",
+          "route_grain": "reason",
+          "route_key_fields": ["reason"],
+          "owner_source_id": "reason_owner_mapping",
+          "fallback_policy": "missing_owner_only",
+          "enabled": true
+        }
+      ]
+    }
+  ]
+}

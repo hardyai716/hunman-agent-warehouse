@@ -191,9 +191,4 @@ requires:
 | P1 纵向对齐 · 低效策略 | ✅ 已完成 | `效率模块/low-efficiency-strategy-analysis/SKILL.md` 已改为 process skill；`sql_templates.py` 为确定性 SQL template engine |
 | P2 横向抽离 · 责任路由 | ✅ 已完成 | `通用能力/owner-routing/`：责任路由 + SLA 计算横向 skill |
 | P2 横向抽离 · 触达 | ✅ 已完成 | `通用能力/anomaly-touch/`：触达生成 + 群聊自主管理 + 人工确认门禁 + 三重硬校验横向 skill |
-
-### 暂缓
-
-| 阶段 | 原因 |
-|---|---|
-| P3 编排层 | 待横向 skill 稳定后再建 `monitoring-orchestrator`，用于串联已跑通的纵向分析 skill + `owner-routing` + `anomaly-touch`。 |
+| P3 编排层 MVP | ✅ 已完成 MVP | `通用能力/monitoring-orchestrator/`：支持 SOP-first config lint、process 产物校验、report-only/shadow 报告发布、route preview 和运行审计；正式事件触达与完整状态机仍在后续阶段 |

@@ -122,6 +122,17 @@ python3 scripts/publish_lark_report.py \
   --identity bot
 ```
 
+SOP-first 新链路应优先使用 report policy，而不是在 orchestrator 中硬编码发布参数：
+
+```bash
+python3 scripts/publish_lark_report.py \
+  --policy-file ../review-monitoring-shared/examples/low_efficiency_sop_config.sample.json \
+  --sop-id low_efficiency_labeling \
+  --report-type low_efficiency_grading \
+  --run-dir <analysis_result_dir> \
+  --dry-run
+```
+
 该入口负责：
 
 1. 读取标准结果目录；

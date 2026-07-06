@@ -12,6 +12,10 @@ import unittest
 from pathlib import Path
 
 import report_publisher as rp
+import report_policy
+
+
+SAMPLE_CONFIG = Path(__file__).resolve().parents[2] / "review-monitoring-shared" / "examples" / "low_efficiency_sop_config.sample.json"
 
 
 class ReportPublisherTest(unittest.TestCase):
@@ -163,6 +167,70 @@ class ReportPublisherTest(unittest.TestCase):
                 str(script),
                 "--run-dir",
                 str(self.run_dir),
+                "--report-type",
+                rp.REPORT_GRADING,
+                "--dry-run",
+            ],
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        payload = json.loads(proc.stdout)
+        self.assertFalse(payload["sent"])
+        self.assertTrue(Path(payload["card_json"]).exists())
+
+    def test_policy_adapter_dry_run(self) -> None:
+        self.write_json(
+            "summary.json",
+            {
+                "dataset_id": "3888816",
+                "region": "cn",
+                "window": {"cur_start": "2026-06-29", "cur_end": "2026-07-05", "prev_start": "2026-06-22", "prev_end": "2026-06-28"},
+                "fallback_reason": "unit_test",
+                "levels": {"P0": {"row_count": 0}, "P1": {"row_count": 0}, "P2": {"row_count": 1}, "notice": {"row_count": 0}},
+            },
+        )
+        self.write_csv(
+            "综合.csv",
+            [{"_level": "P2", "reason": "N1_chuxing_model_llm_pe_review", "avg_jinshen": "100", "avg_wanshen": "90", "avg_dabiao": "1", "ratio_val": "0.01", "hit_condition": "p2"}],
+        )
+        result = report_policy.publish_report_from_policy(
+            config=report_policy.load_config(SAMPLE_CONFIG),
+            sop_id="low_efficiency_labeling",
+            run_dir=self.run_dir,
+            report_type=rp.REPORT_GRADING,
+            dry_run=True,
+        )
+        self.assertFalse(result.sent)
+        self.assertEqual(result.report_type, rp.REPORT_GRADING)
+        self.assertTrue(Path(result.card_json).exists())
+
+    def test_cli_policy_dry_run(self) -> None:
+        self.write_json(
+            "summary.json",
+            {
+                "dataset_id": "3888816",
+                "region": "cn",
+                "window": {"cur_start": "2026-06-29", "cur_end": "2026-07-05", "prev_start": "2026-06-22", "prev_end": "2026-06-28"},
+                "fallback_reason": "unit_test",
+                "levels": {"P0": {"row_count": 0}, "P1": {"row_count": 0}, "P2": {"row_count": 1}, "notice": {"row_count": 0}},
+            },
+        )
+        self.write_csv(
+            "综合.csv",
+            [{"_level": "P2", "reason": "N1_chuxing_model_llm_pe_review", "avg_jinshen": "100", "avg_wanshen": "90", "avg_dabiao": "1", "ratio_val": "0.01", "hit_condition": "p2"}],
+        )
+        script = Path(__file__).with_name("publish_lark_report.py")
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(script),
+                "--run-dir",
+                str(self.run_dir),
+                "--policy-file",
+                str(SAMPLE_CONFIG),
+                "--sop-id",
+                "low_efficiency_labeling",
                 "--report-type",
                 rp.REPORT_GRADING,
                 "--dry-run",

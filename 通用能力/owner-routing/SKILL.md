@@ -29,6 +29,7 @@ metadata:
 当上游已经产出异常事件或命中清单，并需要：
 
 - 根据「指标 + 等级 + 适用范围」找负责人/协作方/升级人；
+- 根据命中行中的业务对象解析负责人，例如 `reason/strategy -> owner`；
 - 获取触达渠道、群聊名、群聊 ID；
 - 计算 SLA 截止时间；
 - 识别 `missing_route` 并转人工；
@@ -78,10 +79,24 @@ metadata:
 
 ## 路由匹配规则
 
-1. 精确匹配：`指标 + 等级 + 适用范围`。
-2. 回退匹配：`指标 + 等级`。
-3. 仍匹配不到：返回 `missing_route=true`，转人工，不臆造责任人。
-4. P0 必须带升级对象；缺失则返回 `missing_route=true` 或 `missing_escalation=true`，由编排层停止触达或转人工。
+MVP 新入口优先使用对象级路由：
+
+```bash
+python3 scripts/route_owner.py \
+  --config ../review-monitoring-shared/examples/low_efficiency_sop_config.sample.json \
+  --sop-id low_efficiency_labeling \
+  --hits <hits.csv> \
+  --run-id <run_id>
+```
+
+对象级规则：
+
+1. 根据 SOP 的 `route_policies[].route_key_fields` 从命中行读取业务对象 key，例如 `reason`。
+2. 根据 `owner_source_id` 查 Owner Source Registry。
+3. 命中映射时输出标准 `route_result`，包含 owner、协作方、升级人、chat_strategy、chat_id 和 `route_confidence`。
+4. 未命中映射时返回 `missing_object_owner=true`，不回退到任意指标负责人。
+5. 旧的「指标 + 等级 + 适用范围」只能作为显式 fallback policy，不能作为唯一责任模型。
+6. P0 必须带升级对象；缺失则返回 `missing_route=true` 或 `missing_escalation=true`，由编排层停止触达或转人工。
 
 ## SLA 口径
 
@@ -92,7 +107,7 @@ metadata:
 | P0 | 立即响应 | 0 |
 | P1 | 2小时内响应 | 120 |
 | P2 | 4小时内响应 | 240 |
-| notice | 当天同步，纳入周报观察 | 1440 |
+| notice | 当天同步 | 1440 |
 
 `sla_deadline = event_created_at + 默认响应分钟`。
 

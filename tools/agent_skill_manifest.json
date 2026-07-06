@@ -7,7 +7,8 @@
       "name": "review-monitoring-shared",
       "source": "通用能力/review-monitoring-shared",
       "exclude_paths": [
-        "scripts/test_card_validator.py"
+        "scripts/test_card_validator.py",
+        "scripts/test_config_linter.py"
       ]
     },
     {
@@ -16,7 +17,17 @@
     },
     {
       "name": "owner-routing",
-      "source": "通用能力/owner-routing"
+      "source": "通用能力/owner-routing",
+      "exclude_paths": [
+        "scripts/test_route_owner.py"
+      ]
+    },
+    {
+      "name": "monitoring-orchestrator",
+      "source": "通用能力/monitoring-orchestrator",
+      "exclude_paths": [
+        "scripts/test_run_orchestrator.py"
+      ]
     },
     {
       "name": "anomaly-touch",
@@ -53,6 +64,18 @@
     {
       "from": "../../效率模块/low-efficiency-strategy-analysis/",
       "to": "../low-efficiency-strategy-analysis/"
+    },
+    {
+      "from": "../../通用能力/review-monitoring-shared/",
+      "to": "../review-monitoring-shared/"
+    },
+    {
+      "from": "../../通用能力/anomaly-touch/",
+      "to": "../anomaly-touch/"
+    },
+    {
+      "from": "../../通用能力/owner-routing/",
+      "to": "../owner-routing/"
     }
   ],
   "exclude_names": [
