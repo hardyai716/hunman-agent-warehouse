@@ -343,8 +343,8 @@ def attach_live_mode_guard_audit(item: dict[str, Any], tmp_dir: Path) -> dict[st
                 issues.append(f"live_mode_status requested_run_mode={live_mode_status.get('requested_run_mode')!r}")
             if live_mode_status.get("authorized") is not False:
                 issues.append(f"live_mode_status authorized={live_mode_status.get('authorized')!r}, expected false")
-            if live_mode_status.get("mvp_supported") is not False:
-                issues.append(f"live_mode_status mvp_supported={live_mode_status.get('mvp_supported')!r}, expected false")
+            if live_mode_status.get("mvp_supported") is not True:
+                issues.append(f"live_mode_status mvp_supported={live_mode_status.get('mvp_supported')!r}, expected true")
 
     audit_text = read_text_if_exists(run_audit_path)
     if not audit_text:

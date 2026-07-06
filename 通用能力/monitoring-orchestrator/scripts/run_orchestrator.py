@@ -3,7 +3,8 @@
 """SOP-first monitoring orchestrator MVP.
 
 MVP scope:
-- manual/report_only/shadow only;
+- manual/report_only/shadow;
+- single-target canary only when a matching production_authorization.v1 file is provided;
 - config lint;
 - process artifact validation;
 - report publishing through anomaly-touch report policy adapter;
@@ -47,9 +48,10 @@ LEVEL_FIELDS = ("_level", "level", "level_label", "sop_level_id")
 LIVE_MODE_REQUIRED_ACTIONS = [
     "Configure platform-side Lark/Aeolus credentials for the production identity.",
     "Validate production SOP/report/touch configuration and target allowlists.",
-    "Enable a manual production authorization switch before running live side-effect modes.",
+    "Enable a manual production authorization file before running live side-effect modes.",
     "Use report_only or shadow until production authorization is complete.",
 ]
+CANARY_AUTH_SCHEMA_VERSION = "production_authorization.v1"
 
 
 def utc_now_text() -> str:
@@ -64,9 +66,130 @@ def live_mode_error_message(run_mode: str) -> str:
     return (
         f"Live side-effect run mode '{run_mode}' is blocked in the current MVP. "
         "Production execution requires platform-side Lark/Aeolus credentials, "
-        "validated production configuration, and a manual enable switch / production authorization. "
+        "validated production configuration, and an explicit production authorization file. "
         "Use report_only or shadow for offline-safe validation."
     )
+
+
+def load_authorization_file(path: Path | None) -> tuple[dict[str, Any] | None, str | None]:
+    if path is None:
+        return None, "production_authorization_file_missing"
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None, "production_authorization_file_not_found"
+    except json.JSONDecodeError:
+        return None, "production_authorization_file_invalid_json"
+    if not isinstance(value, dict):
+        return None, "production_authorization_file_not_object"
+    return value, None
+
+
+def target_from_policy(policy: dict[str, Any]) -> tuple[str | None, str | None, bool]:
+    target_policy = policy.get("report_target_policy") if isinstance(policy.get("report_target_policy"), dict) else {}
+    target_ref = target_policy.get("target_ref")
+    auto_send = bool(target_policy.get("auto_send", False))
+    if not target_ref:
+        return None, None, auto_send
+    target = str(target_ref)
+    if target.startswith("oc_"):
+        return None, target, auto_send
+    return target, None, auto_send
+
+
+def is_expired(expires_at: Any) -> bool:
+    if not expires_at:
+        return False
+    if not isinstance(expires_at, str):
+        return True
+    try:
+        normalized = expires_at.replace("Z", "+00:00")
+        expires = datetime.fromisoformat(normalized)
+    except ValueError:
+        return True
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) > expires.astimezone(timezone.utc)
+
+
+def evaluate_live_authorization(
+    *,
+    run_mode: str,
+    sop_id: str,
+    policy: dict[str, Any],
+    authorization_file: Path | None,
+) -> dict[str, Any]:
+    policy_id = str(policy.get("report_policy_id", ""))
+    report_type = str(policy.get("report_type", ""))
+    level = policy.get("level_selector")
+    target_user, target_chat, auto_send = target_from_policy(policy)
+    status: dict[str, Any] = {
+        "requested_run_mode": run_mode,
+        "authorized": False,
+        "mvp_supported": run_mode == "canary",
+        "safe_alternatives": sorted(ALLOWED_MVP_RUN_MODES),
+        "authorization_file": str(authorization_file) if authorization_file else None,
+        "policy": {
+            "sop_id": sop_id,
+            "report_policy_id": policy_id,
+            "report_type": report_type,
+            "level": level,
+            "auto_send": auto_send,
+            "target_user": target_user,
+            "target_chat": target_chat,
+        },
+    }
+
+    if run_mode != "canary":
+        status["reason"] = "only_canary_can_be_authorized_in_mvp"
+        return status
+
+    authorization, error = load_authorization_file(authorization_file)
+    if error:
+        status["reason"] = error
+        return status
+    assert authorization is not None
+    status["authorization"] = {
+        "schema_version": authorization.get("schema_version"),
+        "authorized_by": authorization.get("authorized_by"),
+        "reason": authorization.get("reason"),
+        "expires_at": authorization.get("expires_at"),
+    }
+
+    expected = {
+        "schema_version": CANARY_AUTH_SCHEMA_VERSION,
+        "enabled": True,
+        "run_mode": run_mode,
+        "sop_id": sop_id,
+        "report_policy_id": policy_id,
+        "report_type": report_type,
+        "level": level,
+        "target_user": target_user,
+        "target_chat": target_chat,
+    }
+    failures: list[str] = []
+    for key, expected_value in expected.items():
+        if expected_value is None:
+            continue
+        if authorization.get(key) != expected_value:
+            failures.append(f"{key}_mismatch")
+    if authorization.get("enabled") is not True:
+        failures.append("authorization_not_enabled")
+    if is_expired(authorization.get("expires_at")):
+        failures.append("authorization_expired_or_invalid")
+    if not auto_send:
+        failures.append("report_policy_auto_send_not_enabled")
+    if not target_user and not target_chat:
+        failures.append("report_policy_target_missing")
+
+    if failures:
+        status["reason"] = "production_authorization_mismatch"
+        status["failures"] = sorted(set(failures))
+        return status
+
+    status["authorized"] = True
+    status["reason"] = "production_authorization_matched"
+    return status
 
 
 def write_json(path: Path, value: Any) -> None:
@@ -371,6 +494,7 @@ class OrchestratorRun:
         report_type: str | None,
         route_preview: bool,
         baseline_run_dir: Path | None,
+        production_authorization_file: Path | None,
     ) -> None:
         self.config_path = config_path
         self.config = config
@@ -386,6 +510,7 @@ class OrchestratorRun:
         self.route_preview = route_preview
         self.audit_path = self.output_dir / "run_audit.jsonl"
         self.summary_path = self.output_dir / "run_summary.json"
+        self.production_authorization_file = production_authorization_file.resolve() if production_authorization_file else None
 
     def audit(self, node_type: str, node_status: str, **extra: Any) -> None:
         append_audit(
@@ -404,31 +529,9 @@ class OrchestratorRun:
 
     def run(self) -> dict[str, Any]:
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        if self.run_mode in LIVE_SIDE_EFFECT_RUN_MODES:
-            message = live_mode_error_message(self.run_mode)
-            self.audit(
-                "live_mode_guard",
-                "blocked",
-                stop_reason="live_mode_requires_production_authorization",
-                error_message=message,
-                required_actions=LIVE_MODE_REQUIRED_ACTIONS,
-            )
-            summary = self._summary(
-                "blocked",
-                stop_reason="live_mode_requires_production_authorization",
-                error_message=message,
-                required_actions=LIVE_MODE_REQUIRED_ACTIONS,
-                live_mode_status={
-                    "requested_run_mode": self.run_mode,
-                    "authorized": False,
-                    "mvp_supported": False,
-                    "safe_alternatives": sorted(ALLOWED_MVP_RUN_MODES),
-                },
-            )
-            write_json(self.summary_path, summary)
-            return summary
         if self.run_mode not in ALLOWED_MVP_RUN_MODES:
-            raise ValueError(f"MVP run_mode must be one of {sorted(SUPPORTED_RUN_MODES)}")
+            if self.run_mode not in LIVE_SIDE_EFFECT_RUN_MODES:
+                raise ValueError(f"MVP run_mode must be one of {sorted(SUPPORTED_RUN_MODES)}")
 
         self.audit("config_load", "success", input_ref=str(self.config_path))
         sop = find_sop(self.config, self.sop_id)
@@ -436,6 +539,39 @@ class OrchestratorRun:
         policy = find_report_policy(sop, self.report_policy_id, self.report_type)
         resolved_report_type = str(policy["report_type"])
         level = policy.get("level_selector")
+
+        if self.run_mode in LIVE_SIDE_EFFECT_RUN_MODES:
+            live_mode_status = evaluate_live_authorization(
+                run_mode=self.run_mode,
+                sop_id=self.sop_id,
+                policy=policy,
+                authorization_file=self.production_authorization_file,
+            )
+            if not live_mode_status["authorized"]:
+                message = live_mode_error_message(self.run_mode)
+                self.audit(
+                    "live_mode_guard",
+                    "blocked",
+                    stop_reason="live_mode_requires_production_authorization",
+                    error_message=message,
+                    required_actions=LIVE_MODE_REQUIRED_ACTIONS,
+                    live_mode_status=live_mode_status,
+                )
+                summary = self._summary(
+                    "blocked",
+                    stop_reason="live_mode_requires_production_authorization",
+                    error_message=message,
+                    required_actions=LIVE_MODE_REQUIRED_ACTIONS,
+                    live_mode_status=live_mode_status,
+                )
+                write_json(self.summary_path, summary)
+                return summary
+            self.audit(
+                "live_mode_guard",
+                "authorized",
+                production_authorization_file=str(self.production_authorization_file),
+                live_mode_status=live_mode_status,
+            )
 
         report = validation_report(self.config, mode=self.run_mode, sop_id=self.sop_id)
         validation_path = self.output_dir / "validation_report.json"
@@ -563,6 +699,7 @@ def main() -> int:
     parser.add_argument("--route-preview", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--baseline-run-dir", type=Path)
+    parser.add_argument("--production-authorization-file", type=Path, help="Explicit canary authorization JSON. Only canary can be authorized in MVP.")
     args = parser.parse_args()
 
     run_id = args.run_id or default_run_id(args.sop_id)
@@ -580,6 +717,7 @@ def main() -> int:
         report_type=args.report_type,
         route_preview=args.route_preview,
         baseline_run_dir=args.baseline_run_dir,
+        production_authorization_file=args.production_authorization_file,
     )
     summary = run.run()
     print(json.dumps(summary, ensure_ascii=False, indent=2))

@@ -68,7 +68,8 @@ LIVE_HANDOFF_MANUAL_ACTIONS = {
     "lark_aeolus_live_side_effects": "requires_platform_credentials_and_manual_enablement",
     "agent_platform_upload": "requires_manual_platform_upload",
     "production_event_writeback": "requires_production_config_and_manual_enablement",
-    "canary_active_touch_execute": "blocked_by_default_in_mvp",
+    "canary": "requires_explicit_single_target_authorization_file",
+    "active_touch_execute": "blocked_by_default_in_mvp",
 }
 
 
@@ -939,7 +940,8 @@ class ProductionReadinessSelfTest(unittest.TestCase):
                     "lark_aeolus_live_side_effects": "requires_platform_credentials_and_manual_enablement",
                     "agent_platform_upload": "requires_manual_platform_upload",
                     "production_event_writeback": "requires_production_config_and_manual_enablement",
-                    "canary_active_touch_execute": "blocked_by_default_in_mvp",
+                    "canary": "requires_explicit_single_target_authorization_file",
+                    "active_touch_execute": "blocked_by_default_in_mvp",
                 },
             )
 

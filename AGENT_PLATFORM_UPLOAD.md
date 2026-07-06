@@ -137,9 +137,23 @@ dist/agent_upload/zips/monitoring-orchestrator.zip
 
 ## 生产副作用边界
 
-`monitoring-orchestrator` 当前 MVP 只支持 `manual`、`report_only`、`shadow` 的离线安全链路。`canary` / `active` / `touch_execute` 默认由 live-mode guard 阻断；最终验收会运行 `canary --dry-run` 探针，并要求命令返回非 0、产物中包含 live-mode guard 与 production authorization 信息。
+`monitoring-orchestrator` 当前 MVP 支持 `manual`、`report_only`、`shadow` 的离线安全链路。`canary` 默认由 live-mode guard 阻断；只有提供匹配的 `production_authorization.v1` 授权文件，且限定到单 SOP、单 report policy、单等级、单目标用户或测试群时，才允许执行受控 canary。`active` / `touch_execute` 仍默认阻断，不支持通过授权文件放行。
 
 真实 Lark / Aeolus 副作用、Agent 平台上传执行、生产事件主表写入和正式触达记录写入仍需平台侧凭证、生产配置校验、目标 allowlist 与人工开关。本地打包和验收命令只证明交付物结构、安全边界和阻断逻辑满足上传前检查，不会自动开启生产执行。
+
+受控 canary 命令形态：
+
+```bash
+python3 通用能力/monitoring-orchestrator/scripts/run_orchestrator.py \
+  --config <single-target-canary-config.json> \
+  --sop-id low_efficiency_labeling \
+  --run-mode canary \
+  --process-run-dir <process-run-dir> \
+  --report-policy-id low_efficiency_p2_detail_report_only \
+  --production-authorization-file <production_authorization.v1.json>
+```
+
+正式事件触达和状态写回仍需等待真实 owner source、角色目录、目标群 allowlist、事件表/触达记录表写回配置、人工确认门禁和回滚方案齐备后再进入 `active`。
 
 ## 验证命令
 

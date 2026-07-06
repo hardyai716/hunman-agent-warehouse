@@ -67,7 +67,7 @@ python3 tools/verify_production_readiness.py --allow-open-round5
 
 最终验收内部会使用 `--allow-open-round5 --summary-out dist/final_acceptance/tmp/<timestamp>/readiness_summary.json`，并把 readiness summary 记录到 `acceptance_summary.json`。
 
-## 离线安全边界
+## 生产化运行边界
 
 最终验收按离线安全口径运行：
 
@@ -76,8 +76,23 @@ python3 tools/verify_production_readiness.py --allow-open-round5
 - 不覆盖 baseline fixture 或历史分析结果。
 - shadow CLI 使用 dry-run 与 route preview，只生成本地审计、对比和报告预览产物。
 - 临时运行产物统一落在 `dist/final_acceptance/tmp/<timestamp>/`。
-- `canary` / `active` / `touch_execute` 当前 MVP 默认由 live-mode guard 阻断；最终验收会用 `canary --dry-run` 验证该阻断返回非 0 且包含生产授权提示。
+- `canary` 默认由 live-mode guard 阻断；只有提供匹配的 `production_authorization.v1` 授权文件，且限定到单 SOP、单 report policy、单等级、单目标用户或测试群时才会放行。
+- `active` / `touch_execute` 当前 MVP 仍默认阻断，不支持通过授权文件放行。
 - 真实 Lark / Aeolus 副作用、Agent 平台上传动作和生产事件写入仍需平台侧凭证、生产配置校验与人工开关，不由本地 MVP 自动启用。
+
+受控 canary 命令形态：
+
+```bash
+python3 通用能力/monitoring-orchestrator/scripts/run_orchestrator.py \
+  --config <single-target-canary-config.json> \
+  --sop-id low_efficiency_labeling \
+  --run-mode canary \
+  --process-run-dir <process-run-dir> \
+  --report-policy-id low_efficiency_p2_detail_report_only \
+  --production-authorization-file <production_authorization.v1.json>
+```
+
+正式事件触达和状态写回进入 `active` 前必须补齐真实 owner source、角色目录、目标群 allowlist、事件表/触达记录表写回配置、人工确认门禁和回滚方案。
 
 ## 打包
 

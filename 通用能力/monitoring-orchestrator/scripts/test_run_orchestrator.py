@@ -81,6 +81,38 @@ class OrchestratorRunTest(unittest.TestCase):
             },
         )
         self._write_csv(run_dir / "综合.csv", rows)
+        self._write_csv(run_dir / "P2.csv", [row for row in rows if row.get("_level") == "P2"] or rows)
+
+    def _write_authorized_canary_config(self) -> tuple[Path, Path]:
+        config = json.loads(CONFIG.read_text(encoding="utf-8"))
+        sop = config["sops"][0]
+        sop["run_mode"] = "canary"
+        target_user = "ou_canary_target"
+        policy = next(item for item in sop["report_policies"] if item["report_policy_id"] == "low_efficiency_p2_detail_report_only")
+        policy["report_target_policy"]["auto_send"] = True
+        policy["report_target_policy"]["target_ref"] = target_user
+        policy["report_target_policy"]["target_type"] = "single_user_canary"
+        policy["level_selector"] = "P2"
+        config_path = Path(self.tmp.name) / "low_efficiency_canary_config.json"
+        auth_path = Path(self.tmp.name) / "canary_authorization.json"
+        self._write_json(config_path, config)
+        self._write_json(
+            auth_path,
+            {
+                "schema_version": "production_authorization.v1",
+                "enabled": True,
+                "authorized_by": "unit-test",
+                "reason": "single target canary dry-run",
+                "run_mode": "canary",
+                "sop_id": "low_efficiency_labeling",
+                "report_policy_id": "low_efficiency_p2_detail_report_only",
+                "report_type": "low_efficiency_level_detail",
+                "level": "P2",
+                "target_user": target_user,
+                "expires_at": "2099-01-01T00:00:00Z",
+            },
+        )
+        return config_path, auth_path
 
     def test_report_only_shadow_run(self) -> None:
         proc = subprocess.run(
@@ -147,12 +179,12 @@ class OrchestratorRunTest(unittest.TestCase):
                 self.assertEqual(summary["stop_reason"], "live_mode_requires_production_authorization")
                 self.assertEqual(summary["live_mode_status"]["requested_run_mode"], run_mode)
                 self.assertFalse(summary["live_mode_status"]["authorized"])
-                self.assertFalse(summary["live_mode_status"]["mvp_supported"])
+                self.assertEqual(summary["live_mode_status"]["mvp_supported"], run_mode == "canary")
                 self.assertEqual(summary["live_mode_status"]["safe_alternatives"], ["manual", "report_only", "shadow"])
                 message = summary["error_message"]
                 self.assertIn("platform-side Lark/Aeolus credentials", message)
                 self.assertIn("validated production configuration", message)
-                self.assertIn("manual enable switch / production authorization", message)
+                self.assertIn("explicit production authorization file", message)
                 self.assertIn("Use report_only or shadow", message)
                 self.assertTrue((output_dir / "run_summary.json").exists())
                 audit = (output_dir / "run_audit.jsonl").read_text(encoding="utf-8")
@@ -160,6 +192,44 @@ class OrchestratorRunTest(unittest.TestCase):
                 self.assertIn('"node_status":"blocked"', audit)
                 self.assertFalse((output_dir / "validation_report.json").exists())
                 self.assertFalse((output_dir / "low_efficiency_grading.card.json").exists())
+
+    def test_authorized_canary_can_run_single_level_dry_run(self) -> None:
+        config_path, auth_path = self._write_authorized_canary_config()
+        output_dir = Path(self.tmp.name) / "orch-canary-authorized"
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--config",
+                str(config_path),
+                "--sop-id",
+                "low_efficiency_labeling",
+                "--run-mode",
+                "canary",
+                "--process-run-dir",
+                str(self.run_dir),
+                "--output-dir",
+                str(output_dir),
+                "--run-id",
+                "RUN-CANARY-AUTH",
+                "--report-policy-id",
+                "low_efficiency_p2_detail_report_only",
+                "--production-authorization-file",
+                str(auth_path),
+                "--dry-run",
+            ],
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        summary = json.loads(proc.stdout)
+        self.assertEqual(summary["run_status"], "completed")
+        self.assertEqual(summary["run_mode"], "canary")
+        self.assertFalse(summary["publish_result"]["sent"])
+        self.assertTrue((output_dir / "low_efficiency_level_detail_P2.card.json").exists())
+        audit = (output_dir / "run_audit.jsonl").read_text(encoding="utf-8")
+        self.assertIn('"node_type":"live_mode_guard"', audit)
+        self.assertIn('"node_status":"authorized"', audit)
 
     def test_report_only_and_shadow_safe_modes_still_complete(self) -> None:
         for run_mode in ("report_only", "shadow"):
