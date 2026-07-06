@@ -1,0 +1,60 @@
+{
+  "template_name": "low_efficiency_dimension_report",
+  "template_version": "1.0.0",
+  "channel": "lark_interactive_card",
+  "cardkit_builder_url": "https://open.feishu.cn/cardkit",
+  "use_cases": [
+    "低效 reason 维度拆解报告",
+    "机审一级标签 × reason 打标率低效结果",
+    "带飞书电子表格入口的数据报告卡片"
+  ],
+  "layout": {
+    "header": "报告标题 + 周期 + 阈值标签",
+    "metrics": "4 个核心指标卡：低效组合数、维度数、日粒度行数、Top1 日均进审",
+    "chart": "按维度汇总的日均进审量 TopN 横向条形图",
+    "table": "TopN 低效组合结构化表格",
+    "actions": "查看完整飞书表格按钮",
+    "methodology": "折叠面板展示口径、数据集、截断、fallback reason"
+  },
+  "template_variables": {
+    "title": "近7天低效打标结果",
+    "subtitle": "机审一级标签 × reason · 2026-06-29 ~ 2026-07-05",
+    "period": "2026-06-29 ~ 2026-07-05",
+    "threshold_label": "打标率<10%",
+    "low_combo_count": 1470,
+    "dimension_count": 13,
+    "daily_detail_rows": 25115,
+    "top1_avg_in": 9109,
+    "dataset_id": "3888816",
+    "region": "cn",
+    "is_truncated": false,
+    "methodology": "SUM(打标量) / SUM(完审量)",
+    "sheet_url": "https://bytedance.larkoffice.com/sheets/<spreadsheet_token>",
+    "dimension_summary": [
+      {
+        "dimension": "领导人",
+        "avg_in": 176395,
+        "label_rate_pct": 22.51,
+        "reason_cnt": 523
+      }
+    ],
+    "top_items": [
+      {
+        "rank": 1,
+        "dimension": "领导人",
+        "reason": "title_leader_table_8578",
+        "avg_in": 9109,
+        "avg_done": 8997,
+        "avg_labeled": 586,
+        "label_rate_pct": 6.52,
+        "days": 7
+      }
+    ]
+  },
+  "cardkit_notes": [
+    "在飞书卡片搭建工具中，TopN 明细优先使用循环容器绑定 top_items 数组；若使用手写 Card 2.0 JSON，则使用 table 组件替代循环容器。",
+    "完整数据不要塞进卡片，只保留 TopN 摘要，完整结果通过 sheet_url 跳转到飞书电子表格。",
+    "口径说明和 provenance 放入折叠面板，默认收起，避免主卡片信息噪声。",
+    "颜色保持蓝色数据报告语义；高危告警版本可派生 red 模板，但不要在同一张卡混用蓝/绿/红多主色。"
+  ]
+}

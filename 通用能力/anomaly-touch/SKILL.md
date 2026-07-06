@@ -166,3 +166,4 @@ metadata:
 
 - 内容生成：[references/touch_message_writer.md](references/touch_message_writer.md)
 - 发送执行：[references/touch_sender.md](references/touch_sender.md)
+- 报告卡片模板：[references/lark_report_card_templates.md](references/lark_report_card_templates.md)
