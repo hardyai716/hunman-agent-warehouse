@@ -2,9 +2,9 @@
 name: anomaly-touch
 description: 人审运营监控体系·异常触达横向能力。Invoke when anomaly events or hit lists need card rendering, preview, confirmation, group creation, send, or touch records.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   author: 李中涛
-  status: draft
+  status: beta
   tags: [人审运营, 横向能力, 异常触达, 飞书群, 人工确认, 三重校验]
   requires:
     bins: ["lark-cli", "python3"]
@@ -140,6 +140,32 @@ python3 scripts/publish_lark_report.py \
 3. 按 `report_type` 选择报告卡片模板；
 4. 渲染发送版卡片与审计版卡片；
 5. 调用 `lark-im` 发送并记录 message id。
+
+### 0.1 正式事件触达入口
+
+当上游已经产出命中明细和 `owner-routing` 的 `route_results.json`，并且目标 owner / 角色目录 / allowlist 已审批后，使用正式事件触达入口：
+
+```bash
+python3 scripts/event_touch_sender.py \
+  --hits <level_hits.csv> \
+  --route-results <route_results.json> \
+  --level P2 \
+  --period 2026-06-29~2026-07-05 \
+  --output-dir <touch_output_dir> \
+  --target-allowlist <approved_target_id> \
+  --identity bot
+```
+
+该入口负责：
+
+1. 校验所有命中行都有 `route_result`；
+2. 按 owner / chat 目标分组；
+3. 渲染正式事件触达卡片；
+4. 校验卡片 hash、等级和目标；
+5. 剥离 `_meta` 后发送；
+6. 写入本地 `touch_records.jsonl` 和 `touch_summary.json`。
+
+当前脚本不直接写生产事件表或触达记录表；生产写回必须在写回目标和幂等策略配置完成后单独开启。
 
 ### 1. 内容生成
 

@@ -94,6 +94,20 @@ python3 通用能力/monitoring-orchestrator/scripts/run_orchestrator.py \
 
 正式事件触达和状态写回进入 `active` 前必须补齐真实 owner source、角色目录、目标群 allowlist、事件表/触达记录表写回配置、人工确认门禁和回滚方案。
 
+正式事件触达的最小执行入口是：
+
+```bash
+python3 通用能力/anomaly-touch/scripts/event_touch_sender.py \
+  --hits <level_hits.csv> \
+  --route-results <route_results.json> \
+  --level P2 \
+  --period <period> \
+  --output-dir <touch_output_dir> \
+  --target-allowlist <approved_target_id>
+```
+
+该入口会发送正式触达卡片并写本地 `touch_records.jsonl`，但不会直接写生产事件表或触达记录表；生产表写回仍需显式配置和审批后再开启。
+
 ## 打包
 
 上传到 Agent 平台前，运行：

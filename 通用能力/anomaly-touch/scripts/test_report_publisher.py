@@ -13,6 +13,7 @@ from pathlib import Path
 
 import report_publisher as rp
 import report_policy
+import event_touch_sender
 
 
 SAMPLE_CONFIG = Path(__file__).resolve().parents[2] / "review-monitoring-shared" / "examples" / "low_efficiency_sop_config.sample.json"
@@ -242,6 +243,79 @@ class ReportPublisherTest(unittest.TestCase):
         payload = json.loads(proc.stdout)
         self.assertFalse(payload["sent"])
         self.assertTrue(Path(payload["card_json"]).exists())
+
+    def test_event_touch_dry_run_writes_records(self) -> None:
+        hits = [
+            {"reason": "r1", "avg_jinshen": "100", "avg_wanshen": "90", "avg_dabiao": "1", "ratio_val": "0.01", "hit_condition": "p2"},
+            {"reason": "r2", "avg_jinshen": "80", "avg_wanshen": "70", "avg_dabiao": "2", "ratio_val": "0.02", "hit_condition": "p2"},
+        ]
+        routes = [
+            {
+                "hit_id": "HIT-0001",
+                "missing_object_owner": False,
+                "business_object": {"route_key": "r1"},
+                "owner_source": "reason_owner_mapping",
+                "owners": [{"id": "ou_owner", "name": "owner", "role": "业务POC"}],
+                "delivery_policy": {"chat_strategy": "dm_owner", "mention_targets": ["ou_owner"]},
+            },
+            {
+                "hit_id": "HIT-0002",
+                "missing_object_owner": False,
+                "business_object": {"route_key": "r2"},
+                "owner_source": "reason_owner_mapping",
+                "owners": [{"id": "ou_owner", "name": "owner", "role": "业务POC"}],
+                "delivery_policy": {"chat_strategy": "dm_owner", "mention_targets": ["ou_owner"]},
+            },
+        ]
+        hits_path = self.run_dir / "P2.csv"
+        self.write_csv("P2.csv", hits)
+        routes_path = self.run_dir / "route_results.json"
+        routes_path.write_text(json.dumps({"route_results": routes}, ensure_ascii=False), encoding="utf-8")
+        output_dir = self.run_dir / "touch"
+
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(Path(__file__).with_name("event_touch_sender.py")),
+                "--hits",
+                str(hits_path),
+                "--route-results",
+                str(routes_path),
+                "--level",
+                "P2",
+                "--period",
+                "2026-06-29~2026-07-05",
+                "--output-dir",
+                str(output_dir),
+                "--target-allowlist",
+                "ou_owner",
+                "--dry-run",
+            ],
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        payload = json.loads(proc.stdout)
+        self.assertEqual(payload["group_count"], 1)
+        self.assertEqual(payload["hit_count"], 2)
+        self.assertEqual(payload["sent_count"], 0)
+        self.assertTrue((output_dir / "touch_records.jsonl").exists())
+        card = json.loads((output_dir / "user_ou_owner.event_touch.card.with_meta.json").read_text(encoding="utf-8"))
+        event_touch_sender.verify_card_hash(card, hits)
+        event_touch_sender.verify_route_match(card, "P2")
+
+    def test_event_touch_blocks_missing_owner(self) -> None:
+        self.write_csv(
+            "P2.csv",
+            [{"reason": "r1", "avg_jinshen": "100", "avg_wanshen": "90", "avg_dabiao": "1", "ratio_val": "0.01", "hit_condition": "p2"}],
+        )
+        routes_path = self.run_dir / "route_results.json"
+        routes_path.write_text(
+            json.dumps({"route_results": [{"missing_object_owner": True, "business_object": {"route_key": "r1"}}]}, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        with self.assertRaises(ValueError):
+            event_touch_sender.validate_routes(event_touch_sender.load_route_results(routes_path), require_all_routed=True)
 
 
 if __name__ == "__main__":
