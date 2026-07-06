@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "output_dir": "dist/agent_upload",
+  "bundle_name": "human_review_monitoring_skills",
+  "skills": [
+    {
+      "name": "review-monitoring-shared",
+      "source": "通用能力/review-monitoring-shared",
+      "exclude_paths": [
+        "scripts/test_card_validator.py"
+      ]
+    },
+    {
+      "name": "warehouse-skill",
+      "source": "通用能力/warehouse-skill"
+    },
+    {
+      "name": "owner-routing",
+      "source": "通用能力/owner-routing"
+    },
+    {
+      "name": "anomaly-touch",
+      "source": "通用能力/anomaly-touch"
+    },
+    {
+      "name": "low-efficiency-strategy-analysis",
+      "source": "效率模块/low-efficiency-strategy-analysis",
+      "exclude_paths": [
+        "assets/**",
+        "references/labeling_rate_metric.md",
+        "references/data_fetch.md",
+        "references/data_readiness.md",
+        "scripts/test_sql_templates.py"
+      ]
+    }
+  ],
+  "path_rewrites": [
+    {
+      "from": "../../通用能力/warehouse-skill/",
+      "to": "../warehouse-skill/"
+    },
+    {
+      "from": "../../../通用能力/warehouse-skill/",
+      "to": "../../warehouse-skill/"
+    },
+    {
+      "from": "../../../效率模块/low-efficiency-strategy-analysis/",
+      "to": "../../low-efficiency-strategy-analysis/"
+    },
+    {
+      "from": "../../效率模块/low-efficiency-strategy-analysis/",
+      "to": "../low-efficiency-strategy-analysis/"
+    }
+  ],
+  "exclude_names": [
+    ".DS_Store",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache"
+  ],
+  "exclude_suffixes": [
+    ".pyc",
+    ".pyo",
+    ".xlsx",
+    ".xls",
+    ".tmp",
+    ".temp",
+    ".bak",
+    ".swp",
+    ".swo"
+  ],
+  "exclude_paths": [
+    "*~",
+    ".tmp/**",
+    "tmp/**",
+    "temp/**"
+  ]
+}

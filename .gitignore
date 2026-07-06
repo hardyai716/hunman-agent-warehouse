@@ -1,0 +1,27 @@
+# Generated upload artifacts
+dist/
+
+# macOS / editor metadata
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Python caches and local test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local temporary files
+.tmp/
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+
+# Generated analysis workbooks
+*.xlsx
+*.xls
