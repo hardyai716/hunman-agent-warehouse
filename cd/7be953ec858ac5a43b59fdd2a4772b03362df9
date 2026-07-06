@@ -1,0 +1,16 @@
+通用能力/owner-routing/references/owner_routing.md
+  h_69a5ec08536e6a 49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "cd7be953ec858ac5a43b59fdd2a4772b03362df9",
+  "prompts": {},
+  "humans": {
+    "h_69a5ec08536e6a": {
+      "author": "IDA Skill Maintainer <ida-skill-maintainer@example.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
