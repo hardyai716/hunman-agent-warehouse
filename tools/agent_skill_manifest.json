@@ -20,7 +20,10 @@
     },
     {
       "name": "anomaly-touch",
-      "source": "通用能力/anomaly-touch"
+      "source": "通用能力/anomaly-touch",
+      "exclude_paths": [
+        "scripts/test_report_publisher.py"
+      ]
     },
     {
       "name": "low-efficiency-strategy-analysis",

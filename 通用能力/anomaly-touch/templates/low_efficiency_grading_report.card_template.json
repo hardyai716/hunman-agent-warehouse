@@ -1,0 +1,47 @@
+{
+  "template_name": "low_efficiency_grading_report",
+  "template_version": "1.0.0",
+  "channel": "lark_interactive_card",
+  "cardkit_builder_url": "https://open.feishu.cn/cardkit",
+  "use_cases": [
+    "单 reason 低效全等级报告",
+    "P0/P1/P2/notice 汇总卡片",
+    "带飞书电子表格入口的分级分析报告"
+  ],
+  "layout": {
+    "header": "报告标题 + 周期 + 全等级标签",
+    "metrics": "4 个等级指标卡：P0、P1、P2、notice",
+    "chart": "各等级命中 reason 数柱状图",
+    "table": "综合表 TopN，按 P0 > P1 > P2 > notice 展示最高等级",
+    "actions": "查看完整飞书表格按钮",
+    "methodology": "折叠面板展示口径、数据集、窗口、fallback reason"
+  },
+  "template_variables": {
+    "title": "近7天单reason低效打标全等级结果",
+    "subtitle": "reason 粒度 · 2026-06-29 ~ 2026-07-05",
+    "period": "2026-06-29 ~ 2026-07-05",
+    "level_counts": {
+      "P0": 5,
+      "P1": 5,
+      "P2": 7,
+      "notice": 409
+    },
+    "sheet_url": "https://bytedance.larkoffice.com/sheets/<spreadsheet_token>",
+    "top_items": [
+      {
+        "rank": 1,
+        "level": "P0",
+        "reason": "N1_chuxing_model_llm_pe_review",
+        "avg_in": 5141,
+        "avg_done": 5150,
+        "avg_labeled": 70,
+        "label_rate_pct": 1.36
+      }
+    ]
+  },
+  "cardkit_notes": [
+    "综合表按 P0 > P1 > P2 > notice 取最高等级。",
+    "TopN 表格只展示定位信息，完整数据通过 sheet_url 跳转。",
+    "全等级汇总使用蓝色数据报告语义，单等级明细模板再按等级切换红/橙/黄。"
+  ]
+}

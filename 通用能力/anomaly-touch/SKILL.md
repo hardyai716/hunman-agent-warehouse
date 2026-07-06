@@ -110,6 +110,26 @@ metadata:
 
 ## 关键流程
 
+### 0. 报告发布统一入口
+
+当上游已经产出标准分析结果目录（`summary.json`、CSV、xlsx）并需要推送到飞书时，优先调用统一发布入口，不要临时手写发送脚本：
+
+```bash
+python3 scripts/publish_lark_report.py \
+  --run-dir <analysis_result_dir> \
+  --report-type <low_efficiency_dimension_breakdown|low_efficiency_grading|low_efficiency_level_detail> \
+  --target-user <ou_xxx> \
+  --identity bot
+```
+
+该入口负责：
+
+1. 读取标准结果目录；
+2. 导入或复用飞书电子表格；
+3. 按 `report_type` 选择报告卡片模板；
+4. 渲染发送版卡片与审计版卡片；
+5. 调用 `lark-im` 发送并记录 message id。
+
 ### 1. 内容生成
 
 - 模板来自触达模板表。

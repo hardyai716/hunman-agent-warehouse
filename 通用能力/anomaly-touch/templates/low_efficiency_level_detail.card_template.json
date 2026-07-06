@@ -1,0 +1,50 @@
+{
+  "template_name": "low_efficiency_level_detail",
+  "template_version": "1.0.0",
+  "channel": "lark_interactive_card",
+  "cardkit_builder_url": "https://open.feishu.cn/cardkit",
+  "use_cases": [
+    "单独发送 P0/P1/P2/notice 某一等级结果",
+    "等级专项排查卡片",
+    "面向责任人的等级明细卡片"
+  ],
+  "layout": {
+    "header": "等级标题 + 周期 + 等级标签",
+    "metrics": "命中 reason、合计日均进审、Top1 日均进审、最低打标率",
+    "description": "等级说明",
+    "table": "该等级 reason 明细 TopN",
+    "actions": "查看完整飞书表格按钮",
+    "methodology": "折叠面板展示口径、数据集、窗口、fallback reason"
+  },
+  "template_variables": {
+    "level": "P0",
+    "title": "P0 低效 reason 明细",
+    "subtitle": "reason 粒度 · 2026-06-29 ~ 2026-07-05",
+    "hit_count": 5,
+    "total_avg_in": 18994,
+    "top1_avg_in": 5141,
+    "min_label_rate_pct": 0.01,
+    "sheet_url": "https://bytedance.larkoffice.com/sheets/<spreadsheet_token>",
+    "top_items": [
+      {
+        "rank": 1,
+        "reason": "N1_chuxing_model_llm_pe_review",
+        "avg_in": 5141,
+        "avg_done": 5150,
+        "avg_labeled": 70,
+        "label_rate_pct": 1.36
+      }
+    ]
+  },
+  "style_rules": {
+    "P0": "red",
+    "P1": "orange",
+    "P2": "yellow",
+    "notice": "blue"
+  },
+  "cardkit_notes": [
+    "等级明细卡片允许按等级切换 header.template，但主色仍只保留一种。",
+    "reason 过长时不要塞满 markdown，统一走表格组件或搭建工具循环容器。",
+    "同一次报告的多个等级卡片应复用同一个 sheet_url，避免重复创建电子表格。"
+  ]
+}
