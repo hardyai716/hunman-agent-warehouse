@@ -14,6 +14,7 @@ from pathlib import Path
 import report_publisher as rp
 import report_policy
 import event_touch_sender
+import base_writeback
 
 
 SAMPLE_CONFIG = Path(__file__).resolve().parents[2] / "review-monitoring-shared" / "examples" / "low_efficiency_sop_config.sample.json"
@@ -316,6 +317,48 @@ class ReportPublisherTest(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             event_touch_sender.validate_routes(event_touch_sender.load_route_results(routes_path), require_all_routed=True)
+
+    def test_base_writeback_touch_upsert_branches_on_idempotency_query(self) -> None:
+        logger = base_writeback.BaseWritebackLogger(self.run_dir / "writeback.log.jsonl", verbose=False)
+        client = base_writeback.BaseWritebackClient(base_token="base_token", output_dir=self.run_dir, logger=logger)
+        calls: list[tuple] = []
+
+        def fake_query(**kwargs):
+            calls.append(("query", kwargs["conditions"]))
+            return []
+
+        def fake_create(**kwargs):
+            calls.append(("create", kwargs["fields"].get("idempotency_key")))
+            return "rec_created"
+
+        def fake_update(**kwargs):
+            calls.append(("update", kwargs["record_id"]))
+            return kwargs["record_id"]
+
+        client.query_by_conditions = fake_query  # type: ignore[method-assign]
+        client.create_record = fake_create  # type: ignore[method-assign]
+        client.update_record = fake_update  # type: ignore[method-assign]
+
+        record_id, action = client.upsert_touch_record(
+            table_id="tbl_touch",
+            idempotency_key="key-1",
+            touch_fields={"idempotency_key": "key-1"},
+        )
+        self.assertEqual((record_id, action), ("rec_created", "created"))
+        self.assertEqual(calls[-1], ("create", "key-1"))
+
+        def fake_query_existing(**kwargs):
+            calls.append(("query_existing", kwargs["conditions"]))
+            return ["rec_existing"]
+
+        client.query_by_conditions = fake_query_existing  # type: ignore[method-assign]
+        record_id, action = client.upsert_touch_record(
+            table_id="tbl_touch",
+            idempotency_key="key-1",
+            touch_fields={"idempotency_key": "key-1"},
+        )
+        self.assertEqual((record_id, action), ("rec_existing", "updated"))
+        self.assertEqual(calls[-1], ("update", "rec_existing"))
 
 
 if __name__ == "__main__":

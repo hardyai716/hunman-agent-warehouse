@@ -108,6 +108,16 @@ python3 通用能力/anomaly-touch/scripts/event_touch_sender.py \
 
 该入口会发送正式触达卡片并写本地 `touch_records.jsonl`，但不会直接写生产事件表或触达记录表；生产表写回仍需显式配置和审批后再开启。
 
+生产写回集成测试入口：
+
+```bash
+export HUMAN_REVIEW_BASE_TOKEN=<runtime_private_base_token>
+python3 tools/run_low_efficiency_production_integration.py \
+  --output-dir dist/production_rollout/original_base_writeback_20260707/integration_flow
+```
+
+该脚本会模拟低效策略生产链路的后半段：读取分析结果、路由结果和正式触达记录，按 `idempotency_key` 查询触达记录表；若已存在则更新，若不存在则创建，并把触达记录关联回事件表。每次查询、创建和更新都会写入 `writeback_idempotency.log.jsonl`，用于排查幂等问题。
+
 ## 打包
 
 上传到 Agent 平台前，运行：

@@ -2,7 +2,7 @@
 name: anomaly-touch
 description: 人审运营监控体系·异常触达横向能力。Invoke when anomaly events or hit lists need card rendering, preview, confirmation, group creation, send, or touch records.
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
   author: 李中涛
   status: beta
   tags: [人审运营, 横向能力, 异常触达, 飞书群, 人工确认, 三重校验]
@@ -166,6 +166,24 @@ python3 scripts/event_touch_sender.py \
 6. 写入本地 `touch_records.jsonl` 和 `touch_summary.json`。
 
 当前脚本不直接写生产事件表或触达记录表；生产写回必须在写回目标和幂等策略配置完成后单独开启。
+
+### 0.2 Base 写回与幂等日志
+
+生产写回由 `scripts/base_writeback.py` 提供底层能力：
+
+- `upsert_event`：按 `sop_id + run_id + 业务对象 + rule_group_id` 查询事件，命中则更新，未命中则创建；
+- `upsert_touch_record`：按 `idempotency_key` 查询触达记录，命中则更新，未命中则创建；
+- 每次查询、创建、更新都会写入 JSONL 日志，字段包括 `idempotency_key`、查询条件、命中记录 ID 和执行分支。
+
+端到端集成测试脚本位于仓库根目录：
+
+```bash
+export HUMAN_REVIEW_BASE_TOKEN=<runtime_private_base_token>
+python3 tools/run_low_efficiency_production_integration.py \
+  --output-dir <integration_output_dir>
+```
+
+该脚本会读取低效策略分析结果、`route_results.json` 和正式触达记录，模拟生产后半段写回链路，并输出 `writeback_idempotency.log.jsonl` 便于排查幂等问题。
 
 ### 1. 内容生成
 
