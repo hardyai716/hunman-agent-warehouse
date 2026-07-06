@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,6 +35,7 @@ REPORT_TYPES = {REPORT_DIMENSION, REPORT_GRADING, REPORT_LEVEL_DETAIL}
 
 LEVEL_PRIORITY = {"P0": 0, "P1": 1, "P2": 2, "notice": 3}
 LEVEL_COLORS = {"P0": "red", "P1": "orange", "P2": "yellow", "notice": "blue"}
+IDEMPOTENCY_SAFE_RE = re.compile(r"[^A-Za-z0-9-]+")
 
 
 def find_shared_scripts() -> Path:
@@ -134,6 +136,14 @@ def strip_internal_keys(value: Any) -> Any:
     if isinstance(value, list):
         return [strip_internal_keys(item) for item in value]
     return value
+
+
+def safe_idempotency_key(raw: str) -> str:
+    key = IDEMPOTENCY_SAFE_RE.sub("-", raw).strip("-")
+    key = re.sub(r"-{2,}", "-", key)
+    if len(key) > 50:
+        key = key[-50:].strip("-")
+    return key or "lark-report"
 
 
 def card_base(title: str, subtitle: str, *, template: str = "blue", tags: list[dict[str, Any]] | None = None) -> dict[str, Any]:
@@ -376,8 +386,6 @@ def grading_methodology(summary: dict[str, Any]) -> list[str]:
     return [
         f"- 数据集：`{summary.get('dataset_id')}` / `{summary.get('region')}`",
         f"- 当前窗口：`{window.get('cur_start')}` ~ `{window.get('cur_end')}`",
-        f"- 前置窗口：`{window.get('prev_start')}` ~ `{window.get('prev_end')}`",
-        "- 综合表按 `P0 > P1 > P2 > notice` 取同一 reason 的最高等级",
         "- 打标率：`SUM(打标量) / SUM(完审量)`",
         f"- fallback_reason：`{summary.get('fallback_reason')}`",
     ]
@@ -528,6 +536,10 @@ def run_lark_cli(args: list[str]) -> dict[str, Any]:
 
 
 def import_workbook(workbook: Path, name: str, identity: str) -> str:
+    try:
+        workbook_arg = str(workbook.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        workbook_arg = str(workbook)
     payload = run_lark_cli(
         [
             "lark-cli",
@@ -537,7 +549,7 @@ def import_workbook(workbook: Path, name: str, identity: str) -> str:
             "--as",
             identity,
             "--file",
-            str(workbook),
+            workbook_arg,
             "--name",
             name,
         ]
@@ -631,7 +643,7 @@ def publish_report(
             identity=identity,
             target_user=target_user,
             target_chat=target_chat,
-            idempotency_key=f"{suffix}-{run_dir.name}",
+            idempotency_key=safe_idempotency_key(f"{suffix}-{run_dir.name}"),
         )
         sent = bool(payload.get("ok"))
         sent_identity = payload.get("identity")

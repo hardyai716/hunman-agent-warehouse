@@ -28,7 +28,7 @@ python3 通用能力/anomaly-touch/scripts/publish_lark_report.py \
 - 若传 `--sheet-url`，复用已有电子表格；
 - 发送版卡片会剥离 `_meta` 内部字段；
 - 审计版卡片保留 `_meta._data_hash`，用于发送前校验；
-- 发送命令统一带 idempotency key；
+- 发送命令统一带 idempotency key，key 仅保留字母、数字、短横线，长度控制在 50 字符以内；
 - 用户身份缺少 `im:message.send_as_user` 时，可回退 bot 身份发送。
 
 ## 模板：low_efficiency_dimension_report
@@ -145,3 +145,4 @@ https://open.feishu.cn/cardkit
 - 表格内 reason 可能很长，卡片仅承载定位和优先级，深挖在电子表格里完成；
 - 数据报告使用蓝色主色；告警升级版本才使用红色主色，避免同卡多主色导致噪声。
 - Card 2.0 `table.columns[].width` 不得小于 `80px`，否则飞书服务端会报卡片创建失败。
+- `lark-cli im +messages-send --idempotency-key` 过长或含不稳定字符时，飞书可能只返回 `field validation failed`；发布层必须先做 key 安全化。

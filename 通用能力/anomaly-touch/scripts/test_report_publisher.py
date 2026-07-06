@@ -135,6 +135,12 @@ class ReportPublisherTest(unittest.TestCase):
         self.assert_send_card_is_clean(card)
         self.assert_table_widths_safe(card)
 
+    def test_safe_idempotency_key(self) -> None:
+        key = rp.safe_idempotency_key("low_efficiency_level_detail_P2-p2_low_efficiency_20260706_155512")
+        self.assertLessEqual(len(key), 50)
+        self.assertRegex(key, r"^[A-Za-z0-9-]+$")
+        self.assertNotIn("_", key)
+
     def test_cli_dry_run(self) -> None:
         self.write_json(
             "summary.json",
