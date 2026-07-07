@@ -9,9 +9,12 @@ import unittest
 from pathlib import Path
 
 import config_linter
+import export_base_sop_config
+import table_config_compiler
 
 
 SAMPLE_CONFIG = Path(__file__).resolve().parents[1] / "examples" / "low_efficiency_sop_config.sample.json"
+TABLE_CONFIG_SAMPLE = Path(__file__).resolve().parents[1] / "examples" / "low_efficiency_table_config_records.sample.json"
 
 
 def load_sample() -> dict:
@@ -60,6 +63,31 @@ class ConfigLinterTest(unittest.TestCase):
         report = config_linter.validation_report(config)
         self.assertEqual(report["summary"]["status"], "failed")
         self.assertIn("EXTERNAL_DEP_IN_REQUIRED_SIBLINGS", check_ids(report))
+
+    def test_table_config_export_compiles_and_passes_lint(self) -> None:
+        table_export = json.loads(TABLE_CONFIG_SAMPLE.read_text(encoding="utf-8"))
+        compiled = table_config_compiler.compile_table_config(table_export)
+        self.assertEqual(compiled["schema_version"], "sop_config.v1")
+        self.assertEqual(compiled["sops"][0]["sop_id"], "low_efficiency_labeling")
+        self.assertEqual(compiled["sops"][0]["nodes"][0]["node_type"], "config_load")
+        self.assertIs(compiled["sops"][0]["levels"][0]["requires_human_confirm"], False)
+        self.assertEqual(compiled["sops"][0]["levels"][0]["priority_order"], 3)
+        report = config_linter.validation_report(compiled, mode="shadow", sop_id="low_efficiency_labeling")
+        self.assertEqual(report["summary"]["status"], "passed", report["findings"])
+
+    def test_base_table_config_merge_preserves_full_config_sections(self) -> None:
+        table_export = json.loads(TABLE_CONFIG_SAMPLE.read_text(encoding="utf-8"))
+        merged = export_base_sop_config.merge_base_config(load_sample(), table_export)
+        sop = merged["sops"][0]
+        self.assertEqual(sop["run_mode"], "shadow")
+        self.assertEqual(sop["sop_type"], "low_efficiency_labeling")
+        self.assertEqual(sop["nodes"][0]["node_type"], "config_load")
+        self.assertTrue(sop["metrics"])
+        self.assertTrue(sop["levels"])
+        self.assertTrue(sop["rule_groups"])
+        self.assertTrue(sop["report_policies"])
+        report = config_linter.validation_report(merged, mode="shadow", sop_id="low_efficiency_labeling")
+        self.assertEqual(report["summary"]["status"], "passed", report["findings"])
 
 
 if __name__ == "__main__":

@@ -129,6 +129,7 @@ def run_orchestrator_mode(config: dict[str, Any], output_root: Path, mode: str) 
         report_policy_id=None,
         report_type="low_efficiency_grading",
         route_preview=True,
+        state_writeback_preview=False,
         baseline_run_dir=None,
         production_authorization_file=None,
     )

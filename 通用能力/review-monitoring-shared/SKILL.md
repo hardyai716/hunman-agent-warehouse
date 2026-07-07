@@ -2,7 +2,7 @@
 name: review-monitoring-shared
 description: 人审运营监控体系公共底座。Invoke when other monitoring skills need Base schema, shared redlines, card validation, or run gates.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   author: 李中涛
   status: MVP
   tags: [人审运营, 监控体系, 公共底座, 配置中心, 飞书多维表格]
@@ -39,10 +39,14 @@ requires:
 
 | 资产 | 路径 | 作用 |
 |---|---|---|
-| 配置中心 & 9 表 schema | [references/base_schema.md](references/base_schema.md) | base_token=`<BASE_TOKEN>`；数据源/指标注册/撞线规则/等级字典/责任路由/触达模板/触达记录/事件/案例沉淀 9 张表完整字段结构 |
+| 配置中心 & schema | [references/base_schema.md](references/base_schema.md) | base_token=`<BASE_TOKEN>`；数据源/指标注册/撞线规则/等级字典/责任路由/触达模板/触达记录/事件/案例沉淀等表结构 |
 | 卡片一致性校验脚本 | [scripts/card_validator.py](scripts/card_validator.py) | 命中数据顺序无关 SHA256、`embed_hash_in_card` 写入 `_meta._data_hash`、发送前三重硬校验（哈希/等级/chat_id 一致）。 |
 | SOP-first 配置校验脚本 | [scripts/config_linter.py](scripts/config_linter.py) | 校验 SOP 注册、等级字典、process/report registry、Owner Source、route grain、shadow 自动发送红线，并输出 `validation_report.v1`。 |
+| SOP-first 表化配置编译器 | [scripts/table_config_compiler.py](scripts/table_config_compiler.py) | 将 Base 表记录导出编译为 orchestrator 可消费的 `sop_config.v1`，并可串联 `config_linter.py` 做上线前校验。 |
+| Base SOP 配置导出合并脚本 | [scripts/export_base_sop_config.py](scripts/export_base_sop_config.py) | 从原 Base 的 SOP-first 配置表导出配置，合并到现有 JSON 配置并执行 lint。 |
 | 低效策略 SOP 样例配置 | [examples/low_efficiency_sop_config.sample.json](examples/low_efficiency_sop_config.sample.json) | 可用于 `monitoring-orchestrator` report-only/shadow MVP 的样例配置，覆盖 process registry、report policy、Owner Source 和低效策略 SOP。 |
+| 低效策略表化配置样例 | [examples/low_efficiency_table_config_records.sample.json](examples/low_efficiency_table_config_records.sample.json) | 模拟从 Base 配置表导出的记录结构，覆盖 SOP 注册、SOP 节点、等级、规则、报告和路由策略。 |
+| 表化配置迁移说明 | [references/table_driven_configuration.md](references/table_driven_configuration.md) | 定义 SOP 注册/节点迁移到 Base 的物理表、编译入口、迁移顺序和强约束。 |
 | 跑批踩坑规避清单 | [references/dry_run_pitfalls.md](references/dry_run_pitfalls.md) | 首次端到端干运行复盘的坑规避动作 + 环境/配置/数据/SQL/取数/字段/dry_run/门禁八道 gate |
 
 ## 配置中心（飞书多维表格）
@@ -56,6 +60,16 @@ requires:
 | 指标注册表 | `tblKsDBLYwSHSNwm` | 有哪些指标（主配置表） |
 | 撞线规则表 | `tbl73HpcA7rWtJ8T` | 什么情况算 notice/P2/P1/P0 |
 | 等级字典表 | `tblgcg6zvhaY3Qrw` | 各等级优先级/SLA/「是否需要人工确认」（**所有等级口径的唯一权威来源**） |
+| SOP 注册表 | `tbl1XbKnCFRNT9B3` | SOP 根对象、启停、运行频率、运行模式、默认报告类型 |
+| SOP 节点表 | `tblQeV35N4hUQjhk` | 编排节点、顺序、启停、失败策略 |
+| Process Skill 注册表 | `tbl3Eb1T8UVDjpBy` | 过程 Skill 能力、输入输出契约、校验命令 |
+| Report Template 注册表 | `tblkLMsbCT4qyZVk` | report type、模板和必需产物 |
+| SOP 指标观测对象表 | `tblolM7J5xosqBkU` | SOP 观测对象和 canonical metric |
+| SOP 等级字典表 | `tblH70YZBJH3AGvy` | SOP 绑定等级、SLA 和受众策略 |
+| SOP 规则组表 | `tblalz3XbnsP8p6X` | SOP 下的规则组、等级引用和路由粒度 |
+| 报告发布策略表 | `tblI8et5gzDGjQol` | SOP 报告策略、目标策略、幂等策略 |
+| SOP 路由策略表 | `tbluiLfUfBAwZ6Xm` | SOP 路由粒度、路由键和 owner source 引用 |
+| Owner Source 注册表 | `tbl8gUBe1eXo8y1O` | owner source 来源、字段和对象映射；完全跑通前默认 owner 为当前操作人 |
 | 责任路由表 | `tblvFGVbTBQ3Vfws` | 不同等级找谁（含「群聊ID」字段，字段ID：fldzVXrZB8） |
 | 触达模板表 | `tblDLzboh47WqJla` | 怎么说 |
 | 触达记录表 | `tbl39ZotgZJ8Q8aL` | 每次触达明细（运行时写入） |
@@ -103,3 +117,47 @@ python3 scripts/config_linter.py \
 ```
 
 通过条件：`summary.status=passed`。若输出 blocker/error，编排层必须停止在 `config_lint`，不得继续取数、发布或触达。
+
+## SOP-first 表化配置编译入口
+
+SOP 注册、节点、等级、规则、报告策略和路由策略迁移到 Base 后，先导出为本地 JSON，再编译为现有编排器可消费的 `sop_config.v1`：
+
+```bash
+python3 scripts/table_config_compiler.py \
+  --input examples/low_efficiency_table_config_records.sample.json \
+  --output <compiled_sop_config.json> \
+  --lint \
+  --mode shadow \
+  --sop-id low_efficiency_labeling
+```
+
+编译通过且 `config_linter.py` 返回 `summary.status=passed` 后，才允许把编译产物作为 `monitoring-orchestrator --config` 输入。
+
+## Base SOP 配置导出入口
+
+当前阶段从 Base 读取 SOP-first 配置表，合并为 orchestrator 可消费的 `sop_config.v1`：
+
+```bash
+export HUMAN_REVIEW_BASE_TOKEN=<runtime_private_base_token>
+python3 scripts/export_base_sop_config.py \
+  --sop-id low_efficiency_labeling \
+  --raw-output <base_table_config_export.json> \
+  --output <merged_sop_config.json> \
+  --lint-output <validation_report.json> \
+  --mode shadow
+```
+
+进入 shadow 编排时可以打开本地写回预览，不会写事件表或触达记录表：
+
+```bash
+python3 ../monitoring-orchestrator/scripts/run_orchestrator.py \
+  --config <merged_sop_config.json> \
+  --sop-id low_efficiency_labeling \
+  --run-mode shadow \
+  --process-run-dir <process_run_dir> \
+  --baseline-run-dir <baseline_run_dir> \
+  --output-dir <shadow_output_dir> \
+  --route-preview \
+  --state-writeback-preview \
+  --dry-run
+```

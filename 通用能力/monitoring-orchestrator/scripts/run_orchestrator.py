@@ -478,6 +478,89 @@ def build_shadow_comparison(
     }
 
 
+def build_state_writeback_preview(
+    *,
+    run_id: str,
+    sop_id: str,
+    run_mode: str,
+    report_type: str,
+    level: str | None,
+    process_run_dir: Path,
+    publish_result: dict[str, Any],
+    route_payload: dict[str, Any] | None,
+) -> dict[str, Any]:
+    routes = route_payload.get("route_results", []) if isinstance(route_payload, dict) else []
+    groups: dict[str, dict[str, Any]] = {}
+    for route in routes:
+        if not isinstance(route, dict):
+            continue
+        owners = route.get("owners") if isinstance(route.get("owners"), list) else []
+        owner_ids = [str(owner.get("id")) for owner in owners if isinstance(owner, dict) and owner.get("id")]
+        delivery = route.get("delivery_policy") if isinstance(route.get("delivery_policy"), dict) else {}
+        target_chat = delivery.get("chat_id")
+        target_key = str(target_chat or ",".join(owner_ids) or "missing_owner")
+        group = groups.setdefault(
+            target_key,
+            {
+                "target_key": target_key,
+                "target_chat": target_chat,
+                "target_users": sorted(set(owner_ids)),
+                "route_count": 0,
+                "missing_owner_count": 0,
+                "sample_route_keys": [],
+            },
+        )
+        group["route_count"] += 1
+        if route.get("missing_object_owner"):
+            group["missing_owner_count"] += 1
+        route_key = (route.get("business_object") or {}).get("route_key") if isinstance(route.get("business_object"), dict) else None
+        if route_key and len(group["sample_route_keys"]) < 10:
+            group["sample_route_keys"].append(route_key)
+
+    planned_touch_records = []
+    for group in sorted(groups.values(), key=lambda item: item["target_key"]):
+        idempotency_key = f"touch_preview:{run_id}:{report_type}:{level or 'all'}:{group['target_key']}"
+        planned_touch_records.append(
+            {
+                **group,
+                "idempotency_key": idempotency_key[:120],
+                "write_enabled": False,
+            }
+        )
+
+    route_summary = route_payload.get("summary", {}) if isinstance(route_payload, dict) else {}
+    return {
+        "schema_version": "state_writeback_preview.v1",
+        "run_id": run_id,
+        "sop_id": sop_id,
+        "run_mode": run_mode,
+        "report_type": report_type,
+        "level": level,
+        "generated_at": utc_now_text(),
+        "write_enabled": False,
+        "safety_reason": "preview_only_for_report_only_shadow_manual",
+        "process_run_dir": str(process_run_dir),
+        "planned_event_upsert": {
+            "table": "事件表",
+            "dedupe_keys": {
+                "sop_id": sop_id,
+                "run_id": run_id,
+                "report_type": report_type,
+            },
+            "route_summary": route_summary,
+            "publish_card_json": publish_result.get("card_json"),
+            "write_enabled": False,
+        },
+        "planned_touch_record_upserts": planned_touch_records,
+        "summary": {
+            "route_count": int(route_summary.get("hit_count", len(routes)) or 0),
+            "routed_count": int(route_summary.get("routed_count", 0) or 0),
+            "missing_owner_count": int(route_summary.get("missing_owner_count", 0) or 0),
+            "target_group_count": len(planned_touch_records),
+        },
+    }
+
+
 class OrchestratorRun:
     def __init__(
         self,
@@ -493,6 +576,7 @@ class OrchestratorRun:
         report_policy_id: str | None,
         report_type: str | None,
         route_preview: bool,
+        state_writeback_preview: bool,
         baseline_run_dir: Path | None,
         production_authorization_file: Path | None,
     ) -> None:
@@ -508,6 +592,7 @@ class OrchestratorRun:
         self.report_policy_id = report_policy_id
         self.report_type = report_type
         self.route_preview = route_preview
+        self.state_writeback_preview = state_writeback_preview
         self.audit_path = self.output_dir / "run_audit.jsonl"
         self.summary_path = self.output_dir / "run_summary.json"
         self.production_authorization_file = production_authorization_file.resolve() if production_authorization_file else None
@@ -638,10 +723,12 @@ class OrchestratorRun:
             )
 
         route_result_path = None
+        route_payload = None
         if self.route_preview:
             hits_file = infer_hits_file(self.process_run_dir, resolved_report_type, level)
             if hits_file:
                 routes = route_hits(self.config, self.sop_id, read_csv_hits(hits_file), run_id=self.run_id)
+                route_payload = routes
                 route_result_path = self.output_dir / "route_results.json"
                 write_json(route_result_path, routes)
                 self.audit("owner_routing", "success", input_ref=str(hits_file), output_ref=str(route_result_path), summary=routes["summary"])
@@ -660,6 +747,30 @@ class OrchestratorRun:
         )
         self.audit("report_publish", "success", output_ref=publish.card_json, publish_result=publish.__dict__)
 
+        state_writeback_preview_path = None
+        if self.state_writeback_preview:
+            if self.run_mode in ALLOWED_MVP_RUN_MODES:
+                preview = build_state_writeback_preview(
+                    run_id=self.run_id,
+                    sop_id=self.sop_id,
+                    run_mode=self.run_mode,
+                    report_type=resolved_report_type,
+                    level=level,
+                    process_run_dir=self.process_run_dir,
+                    publish_result=publish.__dict__,
+                    route_payload=route_payload,
+                )
+                state_writeback_preview_path = self.output_dir / "state_writeback_preview.json"
+                write_json(state_writeback_preview_path, preview)
+                self.audit(
+                    "state_writeback_preview",
+                    "success",
+                    output_ref=str(state_writeback_preview_path),
+                    summary=preview["summary"],
+                )
+            else:
+                self.audit("state_writeback_preview", "skipped", stop_reason="live_mode_not_previewed")
+
         summary = self._summary(
             "completed",
             process_run_dir=str(self.process_run_dir),
@@ -668,6 +779,7 @@ class OrchestratorRun:
             route_results=str(route_result_path) if route_result_path else None,
             baseline_run_dir=str(self.baseline_run_dir) if self.baseline_run_dir else None,
             shadow_comparison=str(shadow_comparison_path) if shadow_comparison_path else None,
+            state_writeback_preview=str(state_writeback_preview_path) if state_writeback_preview_path else None,
         )
         write_json(self.summary_path, summary)
         self.audit("audit_finalize", "success", output_ref=str(self.summary_path))
@@ -697,6 +809,7 @@ def main() -> int:
     parser.add_argument("--report-policy-id")
     parser.add_argument("--report-type")
     parser.add_argument("--route-preview", action="store_true")
+    parser.add_argument("--state-writeback-preview", action="store_true", help="Generate local event/touch writeback preview without writing Base.")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--baseline-run-dir", type=Path)
     parser.add_argument("--production-authorization-file", type=Path, help="Explicit canary authorization JSON. Only canary can be authorized in MVP.")
@@ -716,6 +829,7 @@ def main() -> int:
         report_policy_id=args.report_policy_id,
         report_type=args.report_type,
         route_preview=args.route_preview,
+        state_writeback_preview=args.state_writeback_preview,
         baseline_run_dir=args.baseline_run_dir,
         production_authorization_file=args.production_authorization_file,
     )

@@ -1,0 +1,166 @@
+{
+  "schema_version": "base_table_config_export.v1",
+  "tables": {
+    "Process Skill 注册表": [
+      {
+        "fields": {
+          "Process Skill": "low-efficiency-strategy-analysis",
+          "业务域": "efficiency",
+          "支持 SOP 类型": "[\"low_efficiency_labeling\"]",
+          "支持报告类型": "[\"low_efficiency_grading\", \"low_efficiency_level_detail\"]",
+          "必需领域知识": "efficiency_domain",
+          "依赖 sibling": "warehouse-skill",
+          "运行时工具依赖": "bytedance-aeolus,lark-sheets,lark-im",
+          "校验命令": "python3 scripts/test_sql_templates.py",
+          "输入契约": "{\"required_fields\":[\"period_start\",\"period_end\",\"data_source_id\",\"rule_group_id\"]}",
+          "输出契约": "{\"schema_version\":\"process_output.v1\",\"route_grains\":[\"reason\"],\"level_field\":\"_level\",\"required_files_by_report_type\":{\"low_efficiency_grading\":[\"summary.json\",\"综合.csv\"],\"low_efficiency_level_detail\":[\"summary.json\",\"{level}.csv\"]}}"
+        }
+      }
+    ],
+    "Report Template 注册表": [
+      {
+        "fields": {
+          "报告类型": "low_efficiency_grading",
+          "模板名称": "low_efficiency_grading_report",
+          "场景": "report_card",
+          "本地模板名": "low_efficiency_grading_report.card_template.json",
+          "必需产物": "summary.json,综合.csv",
+          "必需变量": "sop_name,period,summary_metrics,top_items,sheet_url",
+          "是否启用": "是"
+        }
+      },
+      {
+        "fields": {
+          "报告类型": "low_efficiency_level_detail",
+          "模板名称": "low_efficiency_level_detail",
+          "场景": "report_card",
+          "本地模板名": "low_efficiency_level_detail.card_template.json",
+          "必需产物": "[\"summary.json\", \"{level}.csv\"]",
+          "必需变量": "sop_name,period,level_label,top_items,sheet_url",
+          "是否启用": "是"
+        }
+      }
+    ],
+    "Owner Source 注册表": [
+      {
+        "fields": {
+          "Owner Source ID": "reason_owner_mapping",
+          "SOP ID": "low_efficiency_labeling",
+          "路由粒度": "reason",
+          "来源类型": "inline_mapping",
+          "来源引用": "examples.low_efficiency.reason_owner_mapping",
+          "键字段": "route_key",
+          "Owner 字段": "owner_user,collaborators,escalation_users,default_chat_id",
+          "兜底策略": "missing_owner_only",
+          "新鲜度策略": "sample_static",
+          "是否启用": "是",
+          "映射": "[{\"route_key\":\"N1_chuxing_model_llm_pe_review\",\"owner_user\":{\"id\":\"ou_owner_a\",\"name\":\"负责人A\"},\"default_chat_id\":\"\",\"enabled\":true}]"
+        }
+      }
+    ],
+    "SOP 注册表": [
+      {
+        "fields": {
+          "SOP 标识": "low_efficiency_labeling",
+          "SOP 名称": "低效打标策略监控",
+          "SOP 类型": "低效打标",
+          "业务域": "效率",
+          "归属团队": "人审运营",
+          "是否启用": "是",
+          "运行频率": "手动",
+          "运行模式": "影子运行",
+          "过程 Skill": "low-efficiency-strategy-analysis",
+          "领域知识": "efficiency_domain",
+          "默认报告类型": "low_efficiency_grading",
+          "默认触达策略": "仅报告",
+          "状态策略": "影子摘要",
+          "配置版本": "table_config_sample_v1"
+        }
+      }
+    ],
+    "SOP 节点表": [
+      {"fields": {"SOP 节点标识": "low_efficiency_labeling:config_load", "所属 SOP": "low_efficiency_labeling", "节点类型": "加载配置", "节点顺序": "10", "是否启用": "是", "失败策略": "阻断"}},
+      {"fields": {"SOP 节点标识": "low_efficiency_labeling:config_lint", "所属 SOP": "low_efficiency_labeling", "节点类型": "配置校验", "节点顺序": "20", "是否启用": "是", "失败策略": "阻断"}},
+      {"fields": {"SOP 节点标识": "low_efficiency_labeling:data_ready_gate", "所属 SOP": "low_efficiency_labeling", "节点类型": "数据就绪检查", "节点顺序": "30", "是否启用": "是", "失败策略": "阻断"}},
+      {"fields": {"SOP 节点标识": "low_efficiency_labeling:process_analysis", "所属 SOP": "low_efficiency_labeling", "节点类型": "过程分析", "节点顺序": "40", "是否启用": "是", "失败策略": "阻断"}},
+      {"fields": {"SOP 节点标识": "low_efficiency_labeling:report_publish", "所属 SOP": "low_efficiency_labeling", "节点类型": "报告发布", "节点顺序": "50", "是否启用": "是", "失败策略": "仅告警"}},
+      {"fields": {"SOP 节点标识": "low_efficiency_labeling:audit_finalize", "所属 SOP": "low_efficiency_labeling", "节点类型": "审计收尾", "节点顺序": "90", "是否启用": "是", "失败策略": "仅告警"}}
+    ],
+    "SOP 指标观测对象表": [
+      {
+        "fields": {
+          "SOP ID": "low_efficiency_labeling",
+          "指标 ID": "metric_low_label_rate_reason",
+          "指标名称": "reason 粒度低打标率",
+          "指标角色": "primary",
+          "标准指标": "labeling_rate",
+          "数据源 ID": "aeolus_3888816_review_detail",
+          "周期策略": "last_7_complete_days",
+          "是否启用": "是"
+        }
+      }
+    ],
+    "SOP 等级字典表": [
+      {
+        "fields": {
+          "SOP ID": "low_efficiency_labeling",
+          "等级 ID": "low_efficiency_p2",
+          "等级标签": "P2",
+          "等级名称": "P2 低效策略",
+          "标准严重度": "medium",
+          "优先级": "3",
+          "SLA 分钟": "240",
+          "SLA 文案": "4小时内响应",
+          "需要人工确认": "否",
+          "默认受众策略": "治理 BP、人审运营",
+          "是否启用": "是"
+        }
+      }
+    ],
+    "SOP 规则组表": [
+      {
+        "fields": {
+          "SOP ID": "low_efficiency_labeling",
+          "规则组 ID": "rule_low_label_rate_p2",
+          "等级 ID": "low_efficiency_p2",
+          "条件逻辑": "labeling_rate < 0.1 AND avg_review_in >= 100",
+          "窗口策略": "last_7_complete_days",
+          "指标引用": "metric_low_label_rate_reason",
+          "规则 Key": "rule_low_label_rate_p2",
+          "路由粒度": "reason",
+          "受众策略": "治理 BP、人审运营",
+          "是否启用": "是"
+        }
+      }
+    ],
+    "报告发布策略表": [
+      {
+        "fields": {
+          "SOP ID": "low_efficiency_labeling",
+          "报告策略 ID": "low_efficiency_grading_report_only",
+          "报告类型": "low_efficiency_grading",
+          "模板名称": "low_efficiency_grading_report",
+          "表格策略": "{\"strategy\":\"reuse_or_import\",\"sheet_name_template\":\"{sop_name}-{period}-{report_type}\"}",
+          "报告目标策略": "{\"target_type\":\"runtime_override\",\"target_ref\":null,\"auto_send\":false}",
+          "发送身份": "bot",
+          "渲染选项": "{\"top_n\":10}",
+          "幂等策略": "{\"parts\":[\"sop_id\",\"report_type\",\"run_id\"],\"max_length\":50}",
+          "是否启用": "是"
+        }
+      }
+    ],
+    "SOP 路由策略表": [
+      {
+        "fields": {
+          "SOP ID": "low_efficiency_labeling",
+          "路由策略 ID": "low_efficiency_reason_route",
+          "路由粒度": "reason",
+          "路由键字段": "reason",
+          "Owner Source ID": "reason_owner_mapping",
+          "兜底策略": "missing_owner_only",
+          "是否启用": "是"
+        }
+      }
+    ]
+  }
+}

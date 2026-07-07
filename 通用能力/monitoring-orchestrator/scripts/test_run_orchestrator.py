@@ -263,6 +263,43 @@ class OrchestratorRunTest(unittest.TestCase):
                 self.assertTrue((output_dir / "validation_report.json").exists())
                 self.assertTrue((output_dir / "low_efficiency_grading.card.json").exists())
 
+    def test_state_writeback_preview_is_local_only(self) -> None:
+        output_dir = Path(self.tmp.name) / "orch-writeback-preview"
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--config",
+                str(CONFIG),
+                "--sop-id",
+                "low_efficiency_labeling",
+                "--run-mode",
+                "shadow",
+                "--process-run-dir",
+                str(self.run_dir),
+                "--output-dir",
+                str(output_dir),
+                "--run-id",
+                "RUN-WRITEBACK-PREVIEW",
+                "--route-preview",
+                "--state-writeback-preview",
+                "--dry-run",
+            ],
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        summary = json.loads(proc.stdout)
+        preview_path = Path(summary["state_writeback_preview"])
+        self.assertTrue(preview_path.exists())
+        preview = json.loads(preview_path.read_text(encoding="utf-8"))
+        self.assertFalse(preview["write_enabled"])
+        self.assertFalse(preview["planned_event_upsert"]["write_enabled"])
+        self.assertEqual(preview["summary"]["route_count"], 2)
+        self.assertEqual(preview["summary"]["missing_owner_count"], 1)
+        audit = (output_dir / "run_audit.jsonl").read_text(encoding="utf-8")
+        self.assertIn('"node_type":"state_writeback_preview"', audit)
+
     def test_shadow_comparison_generated_with_baseline(self) -> None:
         self._write_low_efficiency_run_dir(
             self.baseline_dir,

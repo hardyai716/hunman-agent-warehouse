@@ -110,6 +110,16 @@ def build_source_index(source: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return result
 
 
+def default_source_record(source: dict[str, Any]) -> dict[str, Any] | None:
+    mappings = [item for item in source.get("mappings", []) if isinstance(item, dict) and item.get("enabled", True)]
+    mappings.sort(key=lambda item: int(item.get("priority", 9999)))
+    for item in mappings:
+        route_key = str(item.get("route_key", ""))
+        if route_key in {"*", "__default__", "default"}:
+            return item
+    return None
+
+
 def route_hit(
     *,
     config: dict[str, Any],
@@ -154,7 +164,7 @@ def route_hit(
     owner_source = owner_sources.get(str(policy.get("owner_source_id")))
     source_record: dict[str, Any] | None = None
     if owner_source and owner_source.get("source_type") == "inline_mapping":
-        source_record = build_source_index(owner_source).get(route_key)
+        source_record = build_source_index(owner_source).get(route_key) or default_source_record(owner_source)
 
     if not source_record:
         return {

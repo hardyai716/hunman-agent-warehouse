@@ -40,6 +40,26 @@ class RouteOwnerTest(unittest.TestCase):
         self.assertEqual(route["missing_reason"], "owner_mapping_not_found")
         self.assertEqual(route["delivery_policy"]["chat_strategy"], "manual_fallback")
 
+    def test_default_owner_mapping_routes_unknown_reason(self) -> None:
+        config = load_config()
+        source = config["owner_source_registry"][0]
+        source["mappings"].append(
+            {
+                "route_key": "__default__",
+                "route_key_alias": "默认 owner",
+                "owner_role": "默认负责人",
+                "owner_user": {"id": "ou_default_owner", "name": "默认负责人"},
+                "enabled": True,
+                "priority": 9999,
+            }
+        )
+        hits = [{"hit_id": "h1", "_level": "P2", "reason": "unknown_reason"}]
+        result = route_owner.route_hits(config, "low_efficiency_labeling", hits, run_id="RUN-1")
+        route = result["route_results"][0]
+        self.assertEqual(result["summary"]["missing_owner_count"], 0)
+        self.assertFalse(route["missing_object_owner"])
+        self.assertEqual(route["owners"][0]["id"], "ou_default_owner")
+
     def test_no_route_policy_match_is_missing_owner(self) -> None:
         hits = [{"hit_id": "h1", "_level": "P2", "strategy": "strategy_a"}]
         result = route_owner.route_hits(load_config(), "low_efficiency_labeling", hits, run_id="RUN-1")

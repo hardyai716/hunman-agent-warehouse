@@ -118,6 +118,37 @@ python3 tools/run_low_efficiency_production_integration.py \
 
 该脚本会模拟低效策略生产链路的后半段：读取分析结果、路由结果和正式触达记录，按 `idempotency_key` 查询触达记录表；若已存在则更新，若不存在则创建，并把触达记录关联回事件表。每次查询、创建和更新都会写入 `writeback_idempotency.log.jsonl`，用于排查幂等问题。
 
+## 表化配置迁移
+
+SOP-first 配置可以从飞书多维表格导出并合并为 orchestrator 可消费的 `sop_config.v1`，再通过 `config_linter.py` 和 shadow 运行验证。
+
+```bash
+export HUMAN_REVIEW_BASE_TOKEN=<runtime_private_base_token>
+python3 通用能力/review-monitoring-shared/scripts/export_base_sop_config.py \
+  --sop-id low_efficiency_labeling \
+  --raw-output dist/base_config/full_base_table_config_export.json \
+  --output dist/base_config/full_base_merged_sop_config.json \
+  --lint-output dist/base_config/full_base_validation_report.json \
+  --mode shadow \
+```
+
+完整 Base 配置进入 shadow 时，可打开本地写回预览节点；该节点只生成 `state_writeback_preview.json`，不会写事件表或触达记录表：
+
+```bash
+python3 通用能力/monitoring-orchestrator/scripts/run_orchestrator.py \
+  --config dist/base_config/full_base_merged_sop_config.json \
+  --sop-id low_efficiency_labeling \
+  --run-mode shadow \
+  --process-run-dir <process-run-dir> \
+  --baseline-run-dir <baseline-run-dir> \
+  --output-dir <shadow-output-dir> \
+  --route-preview \
+  --state-writeback-preview \
+  --dry-run
+```
+
+详细迁移说明见 `通用能力/review-monitoring-shared/references/table_driven_configuration.md`。
+
 ## 打包
 
 上传到 Agent 平台前，运行：
