@@ -2,7 +2,7 @@
 name: anomaly-touch
 description: 人审运营监控体系·异常触达横向能力。Invoke when anomaly events or hit lists need card rendering, preview, confirmation, group creation, send, or touch records.
 metadata:
-  version: "0.3.0"
+  version: "0.3.2"
   author: 李中涛
   status: beta
   tags: [人审运营, 横向能力, 异常触达, 飞书群, 人工确认, 三重校验]
@@ -101,12 +101,13 @@ metadata:
 
 | 类型 | 表 | 用途 |
 |---|---|---|
-| 读 | 触达模板表 `tblDLzboh47WqJla` | 按「模板场景 + 适用等级 + 接收对象」选模板 |
-| 读 | 责任路由表 `tblvFGVbTBQ3Vfws` | 取群聊名、群聊ID、负责人、协作方、升级人 |
-| 读 | 等级字典表 `tblgcg6zvhaY3Qrw` | 取「是否需要人工确认」和 `{sla}` 文案 |
-| 读/写 | 触达记录表 `tbl39ZotgZJ8Q8aL` | 幂等查重；发送后新增触达记录与审计字段 |
-| 写 | 责任路由表 `tblvFGVbTBQ3Vfws` | 首次自动建群后回填「群聊ID」和「群聊/接收方」 |
-| 写 | 事件表 `tblHOC5Y8j58xDYQ` | 可回写「最近触达时间」「路由触达摘要」「触达记录」；状态推进不在本 skill 内做 |
+| 读 | `sop_config.v1` / Report Template 注册表编译产物 | 通过 report policy 选择报告类型、模板名、必需产物和目标策略 |
+| 读 | `route_results.json` | 正式事件触达时使用已解析好的 owner、target_user、target_chat 和 route confidence |
+| 读 | 本 Skill 内 `templates/*.card_template.json` 和渲染脚本 | 渲染结构化报告卡片；低效策略当前不读取 `触达模板表` |
+| 写 | 本地 `touch_records.jsonl` / `touch_summary.json` | 记录发送结果、message_id、card_hash、目标和审计信息 |
+| 写 | 事件表 / 触达记录表 | 仅通过显式写回入口写入，不由报告发布脚本隐式写入 |
+
+> 当前低效策略链路不读取 `触达模板表 tblDLzboh47WqJla`、旧 `责任路由表 tblvFGVbTBQ3Vfws` 或旧 `等级字典表 tblgcg6zvhaY3Qrw`。这些旧表保留为 legacy/兼容资产，当前权威入口是 SOP-first 配置表、Skill 内模板和 `route_results.json`。
 
 ## 关键流程
 
@@ -187,21 +188,21 @@ python3 tools/run_low_efficiency_production_integration.py \
 
 ### 1. 内容生成
 
-- 模板来自触达模板表。
-- `是否需要人工确认` 只看等级字典表 `fldFzR90Aa`，不看触达模板或等级名硬编码。
+- 报告卡片结构来自本 Skill 的模板文件和渲染脚本。
+- 正式事件触达卡片由 `event_touch_sender.py` 基于命中行与 `route_results.json` 渲染。
+- 当前低效策略不读取触达模板表；该表仅作为历史兼容/未来预留。
+- `是否需要人工确认` 在 SOP-first 链路中来自 SOP 等级配置；旧等级字典表仅作 legacy 兼容。
 - 批量命中时渲染为一条表格汇总卡片，不拆多条发送。
 - 生成卡片后，调用 [review-monitoring-shared/scripts/card_validator.py](../review-monitoring-shared/scripts/card_validator.py) 的 `compute_hits_hash` 和 `embed_hash_in_card`，把命中数据哈希写入 `_meta._data_hash`。
 
 ### 2. 群聊自主管理
 
-判定唯一依据 = 责任路由表「群聊ID」字段（字段ID：`fldzVXrZB8`）。
+当前实现不直接建群，也不回写旧责任路由表。正式触达目标必须来自 `route_results.json`，并通过 `--target-allowlist` 显式约束。
 
-- 非空且 `oc_` 开头：复用该群，不新建。
-- 为空：自动建群，邀请主负责人 + 协作方 + 升级人；建群成功后回填：
-  - 「群聊ID」`fldzVXrZB8` ← 新群 chat_id；
-  - 「群聊/接收方」`fldJ4jDodR` ← 新群名。
-- 禁止按群名搜索历史群兜底，避免重名/模糊命中错群。
-- dry_run 下不真建群、不回写，只输出将执行的建群计划。
+- 有 `target_chat`：按群目标发送；
+- 无 `target_chat` 且有 `target_user`：按私聊目标发送；
+- 两者都缺失：停止发送；
+- 群级广播模式应在上游 route policy / owner source 中显式标记，不伪装成真实 owner 路由。
 
 ### 3. 人工确认门禁
 

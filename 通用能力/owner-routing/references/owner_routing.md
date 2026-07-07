@@ -3,50 +3,35 @@
 ## 用途
 判断事件「该找谁」，输出主负责人、协作方、升级对象、渠道和 SLA。
 
-## 读取的多维表格
-- 责任路由表 `tblvFGVbTBQ3Vfws`：按「关联指标 + 等级 + 适用范围」匹配路由，取接收方、触达渠道、群聊名、群聊ID
-- 等级字典表 `tblgcg6zvhaY3Qrw`：取「默认响应分钟」（SLA 计算）和「默认响应时长」（SLA 文案渲染）
+## 当前实现状态
 
-> ⚠️ 责任路由表的「响应SLA」和「响应SLA分钟」两个字段已废弃，不再读取。SLA 统一从等级字典表获取。
+当前 `route_owner.py` 不直接读取旧责任路由表或旧等级字典表。它读取 `sop_config.v1`：
 
-## 写入的多维表格
-- 事件表 `tblHOC5Y8j58xDYQ`：回写「责任方」「协作方」「SLA截止时间」
+- `route_policies`：确定路由粒度和 route key 字段；
+- `owner_source_registry`：解析 owner、协作方、升级人、默认群 ID 和兜底策略；
+- SOP 等级配置：输出等级标签、标准严重度和 SLA 分钟。
+
+输出写入本地 `route_results.json`，由编排、报告、触达和写回节点继续消费。事件表回写由显式写回节点负责。
 
 ## 输入
 ```json
-{ "metric_id": "metric_low_label_rate_strategy", "level": "P1", "scope": "抖音安全审核" }
+{ "reason": "N1_chuxing_model_llm_pe_review", "_level": "P2" }
 ```
 
 ## 输出（结构固定）
 ```json
 {
-  "owner": "策略owner",
-  "collaborators": ["人审运营负责人","场景BP"],
-  "channel": ["飞书群"],
-  "chat": "策略治理群+对应业务群",
-  "sla": "2小时内响应",
-  "sla_minutes": 120,
-  "escalation": "超时或无改善升级P0"
+  "business_object": {"route_grain": "reason", "route_key": "N1_chuxing_model_llm_pe_review"},
+  "owners": [{"role": "业务 POC", "id": "ou_xxx", "name": "负责人"}],
+  "delivery_policy": {"primary_channel": "dm", "chat_strategy": "dm_owner", "chat_id": ""}
 }
 ```
 
-> `sla` 文案取等级字典表「默认响应时长」；`sla_minutes` 取等级字典表「默认响应分钟」。
-
 ## 方法（写在 Skill 里）
-- 匹配顺序：先精确匹配「指标+等级+适用范围」，再回退到「指标+等级」。
+- 匹配顺序：先根据 SOP 路由策略读取 route key，再查 Owner Source 映射，最后按配置中的兜底策略处理。
 - 找不到匹配时不要臆造责任人，标记 `missing_route=true` 转人工。
 - P0 必须带升级对象。
-- SLA 截止时间 = 事件创建时间 + 等级字典表「默认响应分钟」（分钟数）。
-
-## SLA 口径（统一标准）
-等级字典表 `tblgcg6zvhaY3Qrw` 是 SLA 的唯一权威来源：
-
-| 等级 | 默认响应时长 | 默认响应分钟 |
-|------|-------------|-------------|
-| P0 | 立即响应 | 0 |
-| P1 | 2小时内响应 | 120 |
-| P2 | 4小时内响应 | 240 |
-| notice | 当天同步 | 1440 |
+- SLA 信息来自 SOP 等级配置，旧等级字典表不再作为当前路由入口。
 
 ## 与表的边界
-责任人、渠道来自责任路由表；SLA 来自等级字典表；Skill 只负责匹配与回退逻辑。人员 ID 通过 lark-contact 解析，不猜 open_id。
+责任人、渠道来自 Owner Source；SLA 来自 SOP 等级配置；Skill 只负责匹配与回退逻辑。人员 ID 通过 lark-contact 解析或由受控配置提供，不猜 open_id。旧责任路由表和旧等级字典表仅作 legacy 兼容。

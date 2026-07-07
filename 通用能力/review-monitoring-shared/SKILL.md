@@ -2,7 +2,7 @@
 name: review-monitoring-shared
 description: 人审运营监控体系公共底座。Invoke when other monitoring skills need Base schema, shared redlines, card validation, or run gates.
 metadata:
-  version: "0.2.0"
+  version: "0.2.2"
   author: 李中涛
   status: MVP
   tags: [人审运营, 监控体系, 公共底座, 配置中心, 飞书多维表格]
@@ -48,6 +48,7 @@ requires:
 | 低效策略表化配置样例 | [examples/low_efficiency_table_config_records.sample.json](examples/low_efficiency_table_config_records.sample.json) | 模拟从 Base 配置表导出的记录结构，覆盖 SOP 注册、SOP 节点、等级、规则、报告和路由策略。 |
 | 表化配置迁移说明 | [references/table_driven_configuration.md](references/table_driven_configuration.md) | 定义 SOP 注册/节点迁移到 Base 的物理表、编译入口、迁移顺序和强约束。 |
 | 配置治理与运营维护手册 | [references/config_governance.md](references/config_governance.md) | 定义每张 Base 表的表类型标签、当前定位、谁来维护、运营视图和旧表迁移策略。 |
+| Base 表使用排查报告 | [references/base_table_usage_audit.md](references/base_table_usage_audit.md) | 对 20 张 Base 表逐一标记当前是否被代码读取/写入、是否进入编译、是否 legacy 或预留。 |
 | 跑批踩坑规避清单 | [references/dry_run_pitfalls.md](references/dry_run_pitfalls.md) | 首次端到端干运行复盘的坑规避动作 + 环境/配置/数据/SQL/取数/字段/dry_run/门禁八道 gate |
 
 ## 配置中心（飞书多维表格）
@@ -60,7 +61,7 @@ requires:
 | 数据源表 | `tblykQRCZjiqdhX5` | 数据从哪来、字段口径、就绪校验 |
 | 指标注册表 | `tblKsDBLYwSHSNwm` | 有哪些指标（主配置表） |
 | 撞线规则表 | `tbl73HpcA7rWtJ8T` | 什么情况算 notice/P2/P1/P0 |
-| 等级字典表 | `tblgcg6zvhaY3Qrw` | 各等级优先级/SLA/「是否需要人工确认」（**所有等级口径的唯一权威来源**） |
+| 等级字典表 | `tblgcg6zvhaY3Qrw` | legacy 兼容表；当前 SOP-first 链路以 SOP 等级字典表为等级/SLA/人工确认权威源 |
 | SOP 注册表 | `tbl1XbKnCFRNT9B3` | SOP 根对象、启停、运行频率、运行模式、默认报告类型 |
 | SOP 节点表 | `tblQeV35N4hUQjhk` | 编排节点、顺序、启停、失败策略 |
 | Process Skill 注册表 | `tbl3Eb1T8UVDjpBy` | 过程 Skill 能力、输入输出契约、校验命令 |
@@ -72,8 +73,8 @@ requires:
 | SOP 路由策略表 | `tbluiLfUfBAwZ6Xm` | SOP 路由粒度、路由键和 owner source 引用 |
 | Owner Source 注册表 | `tbl8gUBe1eXo8y1O` | owner source 来源、字段和对象映射；完全跑通前默认 owner 为当前操作人 |
 | 配置治理目录表 | `tbl0JIoqJWVWlIHH` | 表级类型标签、当前定位、维护责任、运营视图和迁移策略；不参与编译和运行态写回 |
-| 责任路由表 | `tblvFGVbTBQ3Vfws` | 不同等级找谁（含「群聊ID」字段，字段ID：fldzVXrZB8） |
-| 触达模板表 | `tblDLzboh47WqJla` | 怎么说 |
+| 责任路由表 | `tblvFGVbTBQ3Vfws` | legacy 兼容表；当前 SOP-first 路由以 Owner Source 注册表和 SOP 路由策略表为准 |
+| 触达模板表 | `tblDLzboh47WqJla` | legacy/预留表；当前低效策略报告结构以 Skill 内模板和 Report Template 注册表为准 |
 | 触达记录表 | `tbl39ZotgZJ8Q8aL` | 每次触达明细（运行时写入） |
 | 事件表 | `tblHOC5Y8j58xDYQ` | 全流程状态（运行时写入） |
 | 案例沉淀表 | `tblXrNg8vSXlhSFB` | 沉淀经验（MVP 暂不使用） |

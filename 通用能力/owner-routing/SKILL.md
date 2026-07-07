@@ -2,7 +2,7 @@
 name: owner-routing
 description: 人审运营监控体系·责任路由与 SLA 计算。Invoke when anomaly/event results need owners, collaborators, escalation targets, channels, chat_id, or SLA.
 metadata:
-  version: "0.1.0"
+  version: "0.1.2"
   author: 李中涛
   status: draft
   tags: [人审运营, 横向能力, 责任路由, SLA, 飞书多维表格]
@@ -10,7 +10,7 @@ metadata:
     bins: ["lark-cli"]
     siblings: ["review-monitoring-shared"]
   requires_optional:
-    - "lark-base：平台内置多维表格能力，用于读取责任路由表、等级字典表并按授权回写事件表"
+    - "lark-base：平台内置多维表格能力，仅在需要读取/维护 Base 配置或执行授权写回时使用；当前 route_owner.py 不直接读取旧责任路由表或旧等级字典表"
     - "lark-contact：平台内置通讯录能力，用于解析 owner/collaborator/escalation 的 open_id"
     - "lark-im：平台内置 IM 能力，用于解析或校验群聊 chat_id"
   requires_note: "本 skill 是横向能力层，只做责任路由和 SLA 计算；配置中心与字段结构引用随包上传的 review-monitoring-shared，飞书读写与解析能力由平台内置 lark-* skill 提供。"
@@ -71,11 +71,12 @@ metadata:
 
 | 类型 | 表 | 用途 |
 |---|---|---|
-| 读 | 责任路由表 `tblvFGVbTBQ3Vfws` | 按「关联指标 + 等级 + 适用范围」匹配路由，取负责人、协作方、升级人、触达渠道、群聊名、群聊ID |
-| 读 | 等级字典表 `tblgcg6zvhaY3Qrw` | 取「默认响应分钟」和「默认响应时长」 |
-| 写 | 事件表 `tblHOC5Y8j58xDYQ` | 可由调用方授权后回写「责任方」「协作方」「SLA截止时间」；状态推进不在本 skill 内做 |
+| 读 | `sop_config.v1` 中的 `route_policies` | 确定路由粒度、路由键字段和 owner source 引用 |
+| 读 | `sop_config.v1` 中的 `owner_source_registry` | 解析 owner、协作方、升级人、默认群 ID 和兜底策略 |
+| 读 | `sop_config.v1` 中的 SOP 等级配置 | 输出等级标签、标准严重度和 SLA 分钟 |
+| 写 | 本地 `route_results.json` | 输出每条命中的责任路由结果，供报告、触达和写回节点消费 |
 
-> 责任路由表的历史字段「响应SLA」「响应SLA分钟」已废弃，不再读取。SLA 统一从等级字典表获取。
+> 当前 SOP-first 路由脚本不直接读取旧 `责任路由表 tblvFGVbTBQ3Vfws` 或旧 `等级字典表 tblgcg6zvhaY3Qrw`。旧表仅作为 legacy/兼容资产保留。
 
 ## 路由匹配规则
 
@@ -100,23 +101,14 @@ python3 scripts/route_owner.py \
 
 ## SLA 口径
 
-等级字典表 `tblgcg6zvhaY3Qrw` 是 SLA 唯一权威来源。
-
-| 等级 | 默认响应时长 | 默认响应分钟 |
-|---|---|---|
-| P0 | 立即响应 | 0 |
-| P1 | 2小时内响应 | 120 |
-| P2 | 4小时内响应 | 240 |
-| notice | 当天同步 | 1440 |
-
-`sla_deadline = event_created_at + 默认响应分钟`。
+SOP-first 链路中，SLA 来自 SOP 等级字典配置。旧全局等级字典表只作为兼容资产，不作为当前路由脚本的读取入口。
 
 ## 边界
 
 - 不做异常判断、不做取数、不做分级。
 - 不生成触达内容、不发送消息、不建群。
 - 不推进事件「当前状态」；状态推进由 `monitoring-orchestrator` 负责。
-- 不猜 open_id / chat_id；人员与群 ID 必须通过 `lark-contact` / `lark-im` / 责任路由表解析得到。
+- 不猜 open_id / chat_id；人员与群 ID 必须来自 Owner Source、固定群配置或经 `lark-contact` / `lark-im` 显式解析得到。
 
 ## 详细逻辑
 

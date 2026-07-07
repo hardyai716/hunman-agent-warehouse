@@ -50,6 +50,8 @@
 
 ## 3. 撞线规则表 (tbl73HpcA7rWtJ8T) — 共11个字段
 
+当前状态：legacy 兼容表。SOP-first 低效策略以 `SOP 规则组表` 为规则权威源，当前 Agent 不读取本表作为新 SOP 配置入口。
+
 | 序号 | 字段ID | 字段名 | 类型 | 选项/说明 | 描述 |
 |------|--------|--------|------|-----------|------|
 | 1 | fldTbcnTQF | 规则ID | text(文本) | plain | 唯一标识，如 rule_low_label_rate_p1 |
@@ -68,17 +70,21 @@
 
 ## 4. 等级字典表 (tblgcg6zvhaY3Qrw) — 共5个字段
 
+当前状态：legacy 兼容表。SOP-first 低效策略以 `SOP 等级字典表` 为等级/SLA/人工确认权威源，当前 Agent 不读取本表作为新 SOP 配置入口。
+
 | 序号 | 字段ID | 字段名 | 类型 | 选项/说明 | 描述 |
 |------|--------|--------|------|-----------|------|
 | 1 | fldLqbfj9i | 等级 | text(文本) | P0、P1、P2、notice | — |
 | 2 | fldRLpQMMo | 优先级排序 | number(数字) | — | 数字越小优先级越高，多规则命中时取最高等级 |
 | 3 | fldKoBWRvP | 默认响应时长 | text(文本) | plain | 渲染文案，如"2小时内响应"。触达消息中的 `{sla}` 变量取此字段。 |
 | 4 | fldKw6WtAk | 默认响应分钟 | number(数字) | — | SLA 计算权威，如 120。SLA截止时间 = 事件创建时间 + 此字段（分钟）。 |
-| 5 | fldFzR90Aa | 是否需要人工确认 | checkbox(复选框) | — | **唯一权威**。Skill（touch_sender/touch_message_writer）统一从本字段读取，撞线规则表/触达模板表的同名字段已废弃删除。当前配置：P0=true、P1=true、P2=false、notice=true。 |
+| 5 | fldFzR90Aa | 是否需要人工确认 | checkbox(复选框) | — | legacy 字段。SOP-first 低效策略以 `SOP 等级字典表` 为权威源；本字段仅供旧链路兼容参考。 |
 
 ---
 
 ## 5. 责任路由表 (tblvFGVbTBQ3Vfws) — 共12个字段
+
+当前状态：legacy 兼容表。SOP-first 低效策略以 `Owner Source 注册表` 和 `SOP 路由策略表` 为路由权威源，当前 Agent 不读取本表作为新 SOP 路由入口。
 
 | 序号 | 字段ID | 字段名 | 类型 | 选项/说明 | 描述 |
 |------|--------|--------|------|-----------|------|
@@ -98,6 +104,8 @@
 ---
 
 ## 6. 触达模板表 (tblDLzboh47WqJla) — 共9个字段
+
+当前状态：legacy/预留表。低效策略报告结构来自 Skill 内模板和 Report Template 注册表，当前 Agent 不读取本表。
 
 | 序号 | 字段ID | 字段名 | 类型 | 选项/说明 | 描述 |
 |------|--------|--------|------|-----------|------|
@@ -160,8 +168,8 @@
 | 9 | fldPVA4Zaf | 触达时间 | datetime(日期时间) | — | — |
 | 10 | fldz0pHZVF | 关联事件 | link(关联) | 关联事件表 | — |
 | 11 | fldfBiBeXs | 关联责任路由 | link(关联) | 关联责任路由表 | — |
-| 12 | fldoxOgEGU | 关联触达模板 | link(关联) | 关联触达模板表 | — |
-| 13 | fldUc3FVF5 | 是否需要人工确认 | checkbox(复选框) | — | 运行时写入，值从等级字典表读取后冗余落库，便于记录审计。此为运行时快照，不是权威配置来源。 |
+| 12 | fldoxOgEGU | 关联触达模板 | link(关联) | 关联触达模板表 | legacy 关联字段，当前低效策略写回不使用 |
+| 13 | fldUc3FVF5 | 是否需要人工确认 | checkbox(复选框) | — | 运行时快照字段，不是权威配置来源；SOP-first 链路以 SOP 等级配置为准。 |
 | 14 | fldfAfQiFq | confirmed_by | user(人员) | — | 人工确认人，P0/P1 确认后回写 |
 | 15 | fldl1tKJeb | confirmed_at | datetime(日期时间) | — | 人工确认时间，P0/P1 确认后回写 |
 | 16 | fldntXE7RR | confirm_message_id | text(文本) | plain | 人工确认消息 ID，P0/P1 确认后回写 |
@@ -170,7 +178,7 @@
 
 ## 9. 案例沉淀表 (tblXrNg8vSXlhSFB) — 共12个字段
 
-由 case_to_rule 写入，存储已关闭事件的处理经验。
+当前状态：MVP 暂未启用。未来可由 case_to_rule 或关闭/复盘流程写入，用于存储已关闭事件的处理经验；当前 Agent 不读取、不写入。
 
 | 序号 | 字段ID | 字段名 | 类型 | 选项/说明 | 描述 |
 |------|--------|--------|------|-----------|------|
