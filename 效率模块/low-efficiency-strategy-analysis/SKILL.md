@@ -2,7 +2,7 @@
 name: low-efficiency-strategy-analysis
 description: 人审效率模块·低效 reason 分析流程。Invoke when user asks for high-volume low-label-rate reason detection, P0/P1/P2/notice grading, or dimension × reason efficiency breakdown.
 metadata:
-  version: "1.4.0"
+  version: "1.4.1"
   author: 李中涛
   status: beta
   tags: [人审效率, 低效策略, 打标率, 高完审低打标, 分级分析, 维度拆解]
