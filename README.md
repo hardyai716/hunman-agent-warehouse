@@ -122,6 +122,8 @@ python3 tools/run_low_efficiency_production_integration.py \
 
 SOP-first 配置可以从飞书多维表格导出并合并为 orchestrator 可消费的 `sop_config.v1`，再通过 `config_linter.py` 和 shadow 运行验证。
 
+原 Base 已新增 `配置治理目录表`（`tbl0JIoqJWVWlIHH`），用于标记每张表的表类型标签、当前定位、谁来维护、是否影响 SOP 运行配置、是否由系统自动写入和保留/迁移策略。运营同学优先从该表的 `运营日常维护` / `运营审批维护` 视图进入，事件表和触达记录表保持只读审计。
+
 ```bash
 export HUMAN_REVIEW_BASE_TOKEN=<runtime_private_base_token>
 python3 通用能力/review-monitoring-shared/scripts/export_base_sop_config.py \

@@ -47,6 +47,7 @@ requires:
 | 低效策略 SOP 样例配置 | [examples/low_efficiency_sop_config.sample.json](examples/low_efficiency_sop_config.sample.json) | 可用于 `monitoring-orchestrator` report-only/shadow MVP 的样例配置，覆盖 process registry、report policy、Owner Source 和低效策略 SOP。 |
 | 低效策略表化配置样例 | [examples/low_efficiency_table_config_records.sample.json](examples/low_efficiency_table_config_records.sample.json) | 模拟从 Base 配置表导出的记录结构，覆盖 SOP 注册、SOP 节点、等级、规则、报告和路由策略。 |
 | 表化配置迁移说明 | [references/table_driven_configuration.md](references/table_driven_configuration.md) | 定义 SOP 注册/节点迁移到 Base 的物理表、编译入口、迁移顺序和强约束。 |
+| 配置治理与运营维护手册 | [references/config_governance.md](references/config_governance.md) | 定义每张 Base 表的表类型标签、当前定位、谁来维护、运营视图和旧表迁移策略。 |
 | 跑批踩坑规避清单 | [references/dry_run_pitfalls.md](references/dry_run_pitfalls.md) | 首次端到端干运行复盘的坑规避动作 + 环境/配置/数据/SQL/取数/字段/dry_run/门禁八道 gate |
 
 ## 配置中心（飞书多维表格）
@@ -70,6 +71,7 @@ requires:
 | 报告发布策略表 | `tblI8et5gzDGjQol` | SOP 报告策略、目标策略、幂等策略 |
 | SOP 路由策略表 | `tbluiLfUfBAwZ6Xm` | SOP 路由粒度、路由键和 owner source 引用 |
 | Owner Source 注册表 | `tbl8gUBe1eXo8y1O` | owner source 来源、字段和对象映射；完全跑通前默认 owner 为当前操作人 |
+| 配置治理目录表 | `tbl0JIoqJWVWlIHH` | 表级类型标签、当前定位、维护责任、运营视图和迁移策略；不参与编译和运行态写回 |
 | 责任路由表 | `tblvFGVbTBQ3Vfws` | 不同等级找谁（含「群聊ID」字段，字段ID：fldzVXrZB8） |
 | 触达模板表 | `tblDLzboh47WqJla` | 怎么说 |
 | 触达记录表 | `tbl39ZotgZJ8Q8aL` | 每次触达明细（运行时写入） |

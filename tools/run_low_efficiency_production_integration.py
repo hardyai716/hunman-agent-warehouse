@@ -93,6 +93,74 @@ def build_route_group(route_results: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def existing_path(path: Path | None) -> Path | None:
+    if path is None:
+        return None
+    if path.exists():
+        return path
+    candidate = PROJECT_ROOT / path
+    if candidate.exists():
+        return candidate
+    return path
+
+
+def card_hash_from_meta(card_json_with_meta: Path | None) -> str | None:
+    path = existing_path(card_json_with_meta)
+    if path is None:
+        return None
+    card = read_json(path)
+    meta = card.get("_meta") if isinstance(card, dict) else None
+    if not isinstance(meta, dict):
+        return None
+    value = meta.get("_data_hash") or meta.get("card_hash")
+    return str(value) if value else None
+
+
+def single_target_user_from_route_group(route_group: dict[str, Any]) -> str | None:
+    owners = route_group.get("owners")
+    if isinstance(owners, dict) and owners:
+        return sorted(str(owner_id) for owner_id in owners)[0]
+    return None
+
+
+def touch_record_from_publish_summary(
+    *,
+    publish_summary_path: Path,
+    card_json_with_meta: Path | None,
+    route_group: dict[str, Any],
+    level: str,
+) -> dict[str, Any]:
+    publish_summary = read_json(existing_path(publish_summary_path) or publish_summary_path)
+    card_meta_path = existing_path(card_json_with_meta)
+    if card_meta_path is None and publish_summary.get("card_json_with_meta"):
+        card_meta_path = existing_path(Path(str(publish_summary["card_json_with_meta"])))
+
+    target_user = single_target_user_from_route_group(route_group)
+    if not target_user:
+        raise ValueError("publish-summary writeback requires a single routed target user")
+
+    message_id = publish_summary.get("message_id")
+    if not message_id:
+        raise ValueError("publish_summary is missing message_id")
+
+    card_hash = card_hash_from_meta(card_meta_path)
+    if not card_hash:
+        raise ValueError("card_json_with_meta is missing _meta._data_hash")
+
+    return {
+        "send_status": "sent" if publish_summary.get("sent") else "unknown",
+        "level": level,
+        "target_user": target_user,
+        "target_chat": None,
+        "message_id": message_id,
+        "chat_id": publish_summary.get("chat_id"),
+        "identity": publish_summary.get("identity"),
+        "card_hash": card_hash,
+        "card_json": publish_summary.get("card_json"),
+        "card_json_with_meta": str(card_meta_path) if card_meta_path else None,
+    }
+
+
 def build_writeback_payloads(
     *,
     hits: list[dict[str, Any]],
@@ -170,6 +238,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--process-run-dir", type=Path, default=DEFAULT_PROCESS_RUN_DIR)
     parser.add_argument("--route-results", type=Path, default=DEFAULT_ROUTE_RESULTS)
     parser.add_argument("--touch-records", type=Path, default=DEFAULT_TOUCH_RECORDS)
+    parser.add_argument("--publish-summary", type=Path, help="Use latest report publish summary as the touch source instead of touch_records.jsonl.")
+    parser.add_argument("--card-json-with-meta", type=Path, help="Card JSON containing _meta._data_hash for card_hash writeback.")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--run-id", default="LOW-EFF-PROD-INTEGRATION-20260707")
     parser.add_argument("--level", default=DEFAULT_LEVEL)
@@ -191,7 +261,17 @@ def main() -> int:
     hits = read_csv(hits_path)
     routes_payload = read_json(args.route_results)
     route_group = build_route_group(routes_payload.get("route_results", []))
-    touch_record = choose_touch_record(read_jsonl(args.touch_records))
+    if args.publish_summary:
+        touch_record = touch_record_from_publish_summary(
+            publish_summary_path=args.publish_summary,
+            card_json_with_meta=args.card_json_with_meta,
+            route_group=route_group,
+            level=args.level,
+        )
+        touch_source = str(args.publish_summary)
+    else:
+        touch_record = choose_touch_record(read_jsonl(args.touch_records))
+        touch_source = str(args.touch_records)
     event_fields, touch_fields, event_dedupe_conditions, idempotency_key = build_writeback_payloads(
         hits=hits,
         route_group=route_group,
@@ -214,7 +294,12 @@ def main() -> int:
         "touch_table_id": args.touch_table_id,
         "hits": str(hits_path),
         "route_results": str(args.route_results),
-        "touch_records": str(args.touch_records),
+        "touch_source": touch_source,
+        "touch_records": str(args.touch_records) if not args.publish_summary else None,
+        "publish_summary": str(args.publish_summary) if args.publish_summary else None,
+        "card_json_with_meta": str(args.card_json_with_meta) if args.card_json_with_meta else touch_record.get("card_json_with_meta"),
+        "message_id": touch_record.get("message_id"),
+        "card_hash": touch_record.get("card_hash"),
         "run_id": args.run_id,
         "idempotency_key": idempotency_key,
         "hit_count": len(hits),
