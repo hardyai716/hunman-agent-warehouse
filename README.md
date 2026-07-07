@@ -151,6 +151,12 @@ python3 通用能力/monitoring-orchestrator/scripts/run_orchestrator.py \
 
 详细迁移说明见 `通用能力/review-monitoring-shared/references/table_driven_configuration.md`。
 
+验证表化 SOP 模板是否能离线生成低效策略报告卡片，可运行：
+
+```bash
+python3 tools/smoke_low_efficiency_sop_template.py
+```
+
 ## 打包
 
 上传到 Agent 平台前，运行：
