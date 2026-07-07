@@ -1,0 +1,65 @@
+效率模块/low-efficiency-strategy-analysis/SKILL.md
+  s_5e46b629e5268a::t_170698ad42951f 5 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4c8b38a8f11b44dc73cf10","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":5}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "04f86e3e26a265d278347070f65f894d0d8bfe33",
+  "prompts": {},
+  "humans": {
+    "h_69a5ec08536e6a": {
+      "author": "IDA Skill Maintainer <ida-skill-maintainer@example.com>"
+    }
+  },
+  "sessions": {
+    "s_5e46b629e5268a": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a4c7a27a8f11b44dc73c94a",
+        "model": "gpt-5.5__max"
+      },
+      "human_author": "IDA Skill Maintainer <ida-skill-maintainer@example.com>"
+    }
+  },
+  "attestation_metadata": {
+    "效率模块/low-efficiency-strategy-analysis/SKILL.md": [
+      {
+        "hash": "s_5e46b629e5268a::t_170698ad42951f",
+        "line_ranges": [
+          {
+            "Single": 5
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4c8b38a8f11b44dc73cf10",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 5
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_5e46b629e5268a": {
+      "tool": "trae",
+      "conversation_id": "6a4c7a27a8f11b44dc73c94a",
+      "session_id": "6a4c7a27a8f11b44dc73c94a",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_5e46b629e5268a::t_170698ad42951f": {
+      "tool": "trae",
+      "conversation_id": "6a4c7a27a8f11b44dc73c94a",
+      "session_id": "6a4c7a27a8f11b44dc73c94a",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
