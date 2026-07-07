@@ -118,11 +118,37 @@ python3 tools/run_low_efficiency_production_integration.py \
 
 该脚本会模拟低效策略生产链路的后半段：读取分析结果、路由结果和正式触达记录，按 `idempotency_key` 查询触达记录表；若已存在则更新，若不存在则创建，并把触达记录关联回事件表。每次查询、创建和更新都会写入 `writeback_idempotency.log.jsonl`，用于排查幂等问题。
 
-## 表化配置迁移
+## 本地/Skill-first 配置
 
-SOP-first 配置可以从飞书多维表格导出并合并为 orchestrator 可消费的 `sop_config.v1`，再通过 `config_linter.py` 和 shadow 运行验证。
+后续默认不依赖飞书多维表格作为运行配置主路径。`monitoring-orchestrator` 直接读取仓库内的 `sop_config.v1`，Skill 内沉淀报告结构、卡片模板、变量契约、校验逻辑和幂等策略；飞书多维表格只作为可选的运营控制面、运行态审计面和历史兼容资产。
 
-原 Base 已新增 `配置治理目录表`（`tbl0JIoqJWVWlIHH`），用于标记每张表的表类型标签、当前定位、谁来维护、是否影响 SOP 运行配置、是否由系统自动写入和保留/迁移策略。运营同学优先从该表的 `运营日常维护` / `运营审批维护` 视图进入，事件表和触达记录表保持只读审计。
+默认本地配置入口：
+
+```bash
+python3 通用能力/monitoring-orchestrator/scripts/run_orchestrator.py \
+  --config 通用能力/review-monitoring-shared/examples/low_efficiency_sop_config.sample.json \
+  --sop-id low_efficiency_labeling \
+  --run-mode shadow \
+  --process-run-dir 通用能力/monitoring-orchestrator/examples/low_efficiency_run \
+  --route-preview \
+  --dry-run
+```
+
+验证本地 SOP 配置能否离线生成低效策略报告卡片：
+
+```bash
+python3 tools/smoke_low_efficiency_sop_template.py
+```
+
+该 smoke 默认读取本地 `low_efficiency_sop_config.sample.json`，不会发送 Lark 消息，也不会写 Base。
+
+## 可选 Base 控制面
+
+如果后续仍需要运营通过多维表格调整少量控制面配置，应只保留业务开关、运行模式、触达范围、固定群/owner source、发布策略和运行态审计。报告结构、触达模板正文、卡片布局和变量渲染继续由 Skill 维护。
+
+原 Base 已新增 `配置治理目录表`（`tbl0JIoqJWVWlIHH`），用于标记每张表的表类型标签、当前定位、谁来维护、是否影响 SOP 运行配置、是否由系统自动写入和保留/迁移策略。运营同学只在需要时从该表的 `运营日常维护` / `运营审批维护` 视图进入；事件表和触达记录表保持只读审计。
+
+Base 导出仍作为可选桥接能力保留：
 
 ```bash
 export HUMAN_REVIEW_BASE_TOKEN=<runtime_private_base_token>
@@ -149,13 +175,7 @@ python3 通用能力/monitoring-orchestrator/scripts/run_orchestrator.py \
   --dry-run
 ```
 
-详细迁移说明见 `通用能力/review-monitoring-shared/references/table_driven_configuration.md`。
-
-验证表化 SOP 模板是否能离线生成低效策略报告卡片，可运行：
-
-```bash
-python3 tools/smoke_low_efficiency_sop_template.py
-```
+详细边界见 `通用能力/review-monitoring-shared/references/table_driven_configuration.md` 和 `通用能力/review-monitoring-shared/references/config_governance.md`。
 
 ## 打包
 

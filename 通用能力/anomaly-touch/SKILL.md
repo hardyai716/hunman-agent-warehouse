@@ -2,7 +2,7 @@
 name: anomaly-touch
 description: 人审运营监控体系·异常触达横向能力。Invoke when anomaly events or hit lists need card rendering, preview, confirmation, group creation, send, or touch records.
 metadata:
-  version: "0.3.2"
+  version: "0.3.3"
   author: 李中涛
   status: beta
   tags: [人审运营, 横向能力, 异常触达, 飞书群, 人工确认, 三重校验]
@@ -10,10 +10,10 @@ metadata:
     bins: ["lark-cli", "python3"]
     siblings: ["review-monitoring-shared"]
   requires_optional:
-    - "lark-base：平台内置多维表格能力，用于读取触达模板/路由配置并写入触达记录"
+    - "lark-base：平台内置多维表格能力，仅在显式开启运行态审计写回或读取可选 Base 控制面导出结果时使用"
     - "lark-im：平台内置 IM 能力，用于建群、查群、发卡片和发送确认消息"
     - "lark-contact：平台内置通讯录能力，用于解析责任人与人工确认对象"
-  requires_note: "本 skill 是横向触达能力；卡片一致性校验脚本来自随包上传的 review-monitoring-shared/scripts/card_validator.py，飞书读写与消息能力由平台内置 lark-* skill 提供。"
+  requires_note: "本 skill 是横向触达能力；报告结构和卡片模板优先来自本 Skill 与本地 sop_config.v1，卡片一致性校验脚本来自 review-monitoring-shared/scripts/card_validator.py，飞书消息能力由平台内置 lark-* skill 提供。"
 ---
 
 # anomaly-touch — 异常触达
@@ -38,7 +38,7 @@ metadata:
 - 把事件渲染为飞书卡片；
 - 同等级多条命中汇总为一条表格卡片；
 - 先私聊 preview，等待人工回复「确认发送」；
-- 按责任路由表自动建群/复用群，并回填 chat_id；
+- 按 `route_results.json` 或显式目标自动选择群/私聊目标；
 - 通过哈希/等级/chat_id 三重校验后正式发送；
 - 写入触达记录表；
 
@@ -97,7 +97,7 @@ metadata:
 
 ## 读取与写入
 
-配置中心与字段结构统一引用 [review-monitoring-shared/references/base_schema.md](../review-monitoring-shared/references/base_schema.md)。
+运行配置优先读取本地 `sop_config.v1`；可选 Base 字段结构统一引用 [review-monitoring-shared/references/base_schema.md](../review-monitoring-shared/references/base_schema.md)。
 
 | 类型 | 表 | 用途 |
 |---|---|---|
@@ -216,7 +216,7 @@ python3 tools/run_low_efficiency_production_integration.py \
 
 1. `verify_card_hash`：卡片哈希与当前命中数据一致；
 2. `verify_route_match`：卡片 `_meta.level` 与目标等级一致；
-3. `verify_route_chat_id`：实际发送目标 chat_id 与责任路由表 chat_id 完全一致。
+3. `verify_route_chat_id`：实际发送目标 chat_id 与 `route_results.json` 或显式 allowlist 中的目标完全一致。
 
 任一失败立即 `send_status=blocked`，停止发送。
 

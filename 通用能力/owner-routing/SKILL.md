@@ -2,10 +2,10 @@
 name: owner-routing
 description: 人审运营监控体系·责任路由与 SLA 计算。Invoke when anomaly/event results need owners, collaborators, escalation targets, channels, chat_id, or SLA.
 metadata:
-  version: "0.1.2"
+  version: "0.1.3"
   author: 李中涛
   status: draft
-  tags: [人审运营, 横向能力, 责任路由, SLA, 飞书多维表格]
+  tags: [人审运营, 横向能力, 责任路由, SLA, sop_config, 可选Base控制面]
   requires:
     bins: ["lark-cli"]
     siblings: ["review-monitoring-shared"]
@@ -13,7 +13,7 @@ metadata:
     - "lark-base：平台内置多维表格能力，仅在需要读取/维护 Base 配置或执行授权写回时使用；当前 route_owner.py 不直接读取旧责任路由表或旧等级字典表"
     - "lark-contact：平台内置通讯录能力，用于解析 owner/collaborator/escalation 的 open_id"
     - "lark-im：平台内置 IM 能力，用于解析或校验群聊 chat_id"
-  requires_note: "本 skill 是横向能力层，只做责任路由和 SLA 计算；配置中心与字段结构引用随包上传的 review-monitoring-shared，飞书读写与解析能力由平台内置 lark-* skill 提供。"
+  requires_note: "本 skill 是横向能力层，只做责任路由和 SLA 计算；默认读取本地 sop_config.v1，Base 仅作为可选控制面导出来源，飞书人员/群解析能力由平台内置 lark-* skill 提供。"
 ---
 
 # owner-routing — 责任路由
@@ -67,7 +67,7 @@ metadata:
 
 ## 读取与写入
 
-配置中心与字段结构统一引用 [review-monitoring-shared/references/base_schema.md](../review-monitoring-shared/references/base_schema.md)。
+运行配置优先读取本地 `sop_config.v1`；可选 Base 字段结构统一引用 [review-monitoring-shared/references/base_schema.md](../review-monitoring-shared/references/base_schema.md)。
 
 | 类型 | 表 | 用途 |
 |---|---|---|

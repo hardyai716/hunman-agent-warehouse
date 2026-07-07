@@ -4,6 +4,8 @@
 
 本报告按当前 SOP-first 低效策略实现排查：代码是否直接读取/写入 Base 表、是否进入 `sop_config.v1` 编译、是否只是 legacy/预留表。结论用于简化运营入口，不代表立即删除真实 Base 表或字段。
 
+后续默认运行不依赖 Base。仓库内 `sop_config.v1` 是默认配置入口；Base 表只保留为可选控制面、运行审计面和历史兼容资产。
+
 ## 删除原则
 
 - 不直接删除真实 Base 表或字段。删除会破坏历史记录、link 字段、回滚路径和审计链路。
@@ -11,20 +13,20 @@
 - 连续多个线上周期确认无读取、无写入、无人工依赖后，再单独发起删除/归档。
 - `系统表ID（无需填写）` 属于治理目录表的工程追踪字段，不是业务配置字段；可以在运营视图中隐藏，但不建议删除。
 
-## 当前活跃表
+## 可选 Base 控制/审计表
 
 | 表 | 当前用途 | 代码路径 | 结论 |
 |---|---|---|---|
-| SOP 注册表 | SOP 根对象、启停、运行模式 | `export_base_sop_config.py` -> `table_config_compiler.py` -> `config_linter.py` | 保留，运营日常维护 |
-| SOP 规则组表 | SOP 规则组、等级引用、路由粒度 | 同上 | 保留，运营日常维护 |
-| SOP 等级字典表 | SOP 等级、SLA、人工确认策略 | 同上 | 保留，运营日常维护 |
-| Owner Source 注册表 | owner 映射、固定群/默认 owner、兜底 | `route_owner.py` 从 `owner_source_registry` 读取 | 保留，运营日常维护 |
-| 报告发布策略表 | 报告类型、目标策略、幂等策略 | `report_policy.py` 从编译配置读取 | 保留，运营日常维护 |
-| SOP 指标观测对象表 | SOP 观测对象和 canonical metric | 编译配置读取 | 保留，运营审批维护 |
-| SOP 路由策略表 | route grain、route key、owner source 引用 | `route_owner.py` 从 `route_policies` 读取 | 保留，运营审批维护 |
-| Report Template 注册表 | report type、模板名、必需产物 | `config_linter.py` 和 `report_policy.py` 读取编译配置 | 保留，工程/审批维护 |
-| SOP 节点表 | 编排节点和失败策略 | `config_linter.py` 读取编译配置 | 保留，工程维护 |
-| Process Skill 注册表 | process 输入输出契约和依赖 | `config_linter.py` 读取编译配置 | 保留，工程维护 |
+| SOP 注册表 | SOP 根对象、启停、运行模式 | 可选：`export_base_sop_config.py` -> `table_config_compiler.py` -> `config_linter.py` | 保留，启用 Base 控制面时运营日常维护 |
+| SOP 规则组表 | SOP 规则组、等级引用、路由粒度 | 同上 | 保留，启用 Base 控制面时运营日常维护 |
+| SOP 等级字典表 | SOP 等级、SLA、人工确认策略 | 同上 | 保留，启用 Base 控制面时运营日常维护 |
+| Owner Source 注册表 | owner 映射、固定群/默认 owner、兜底 | 默认从本地 `sop_config.v1` 读取；Base 仅可选导出 | 保留，启用 Base 控制面时运营日常维护 |
+| 报告发布策略表 | 报告类型、目标策略、幂等策略 | 默认从本地 `sop_config.v1` 读取；Base 仅可选导出 | 保留，启用 Base 控制面时运营日常维护 |
+| SOP 指标观测对象表 | SOP 观测对象和 canonical metric | 可选编译配置读取 | 保留，运营审批维护 |
+| SOP 路由策略表 | route grain、route key、owner source 引用 | 默认从本地 `sop_config.v1` 读取；Base 仅可选导出 | 保留，运营审批维护 |
+| Report Template 注册表 | report type、模板名、必需产物 | 默认从本地 `sop_config.v1` 读取；模板文件仍在 Skill 内 | 保留，工程/审批维护 |
+| SOP 节点表 | 编排节点和失败策略 | 默认从本地 `sop_config.v1` 读取；Base 仅可选导出 | 保留，工程维护 |
+| Process Skill 注册表 | process 输入输出契约和依赖 | 默认从本地 `sop_config.v1` 读取；Base 仅可选导出 | 保留，工程维护 |
 | 事件表 | 运行态事件账本 | `base_writeback.py` / `run_low_efficiency_production_integration.py` 写入 | 保留，只读审计 |
 | 触达记录表 | 运行态触达账本 | 同上 | 保留，只读审计 |
 | 配置治理目录表 | 表级治理入口 | 人工/治理使用，不参与运行 | 保留，运营审批维护 |

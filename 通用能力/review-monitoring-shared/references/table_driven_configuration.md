@@ -1,19 +1,32 @@
-# SOP-first 表化配置迁移说明
+# 可选 Base 控制面桥接说明
 
 ## 结论
 
-SOP 注册和 SOP 节点信息可以迁移到飞书多维表格，且这一步与当前架构一致。推荐先采用“Base 表记录 -> `sop_config.v1` -> `config_linter` -> orchestrator”的编译式迁移，不直接让 orchestrator 在运行时读写配置表。
+后续默认不把飞书多维表格作为运行配置主路径。当前推荐路线是：
+
+```text
+本地 sop_config.v1 -> config_linter -> monitoring-orchestrator
+```
+
+Base 只保留为可选的运营控制面、运行态审计面和历史兼容资产。确实需要运营通过 Base 调整少量开关、发布策略或路由范围时，才采用：
+
+```text
+Base 表记录 -> 导出 JSON -> 编译为 sop_config.v1 -> config_linter -> shadow/canary
+```
+
+不建议让 orchestrator 在运行时直接读写配置表。
 
 这样做的收益是：
 
-- 保留现有 JSON 配置作为回滚快照；
+- 本地 `sop_config.v1` 成为默认运行配置和可审计回滚快照；
 - 复用已经通过验收的 `config_linter.py`；
 - 避免 Base 权限、字段类型或分页问题影响生产编排；
-- 后续可以逐步把运营配置入口从本地 JSON 切到 Base。
+- 把稳定执行方法、报告结构、卡片模板和变量契约沉淀在 Skill 中；
+- Base 变更必须先导出、lint、shadow，再进入 canary。
 
-## 建议物理表
+## 可选控制面表
 
-第一阶段先建配置表，不复用事件表和触达记录表。
+以下表只在需要 Base 控制面时使用。它们不是默认运行依赖，也不承载卡片结构、报告正文模板或复杂执行逻辑。
 
 | 表名 | 职责 | 主键 |
 |---|---|---|
@@ -30,7 +43,7 @@ SOP 注册和 SOP 节点信息可以迁移到飞书多维表格，且这一步�
 
 ## 当前原 Base 已创建表
 
-以下表已在原 Base 中创建，字段名和可选值优先使用中文，编译层会映射为 `sop_config.v1` 内部字段和值。
+以下表已在原 Base 中创建，字段名和可选值优先使用中文。若启用 Base 控制面，编译层会把它们映射为 `sop_config.v1` 内部字段和值；若走默认本地配置，则这些表只作为治理和审计参考。
 
 | 表名 | table_id | 状态 |
 |---|---|---|
@@ -48,7 +61,7 @@ SOP 注册和 SOP 节点信息可以迁移到飞书多维表格，且这一步�
 
 ## 运营维护分层
 
-新增 SOP 表不废弃旧表。SOP 表承担“配置控制面”，事件、触达、案例沉淀等旧表继续承担“运行态账本”，数据源、指标、触达模板等旧表继续承担“基础域资产”。
+新增 SOP 表不废弃旧表，但默认不再作为运行入口。SOP 表只在启用 Base 控制面时承担“可视化维护/审批入口”，事件、触达、案例沉淀等旧表继续承担“运行态账本”，数据源、指标、触达模板等旧表继续承担“基础域资产或历史兼容资产”。
 
 原 Base 已新增 `配置治理目录表`，并创建 5 个运营视图：
 
@@ -61,7 +74,7 @@ SOP 注册和 SOP 节点信息可以迁移到飞书多维表格，且这一步�
 | 兼容旧表待迁移 | `当前定位 = 兼容旧表` | 4 |
 | 暂不维护 | `谁来维护 = 暂不维护` | 1 |
 
-运营日常只维护 `SOP 注册表`、`SOP 规则组表`、`SOP 等级字典表`、`Owner Source 注册表` 和 `报告发布策略表`。其他表要么需要审批，要么工程维护，要么只读审计。
+如果启用 Base 控制面，运营日常只维护 `SOP 注册表`、`SOP 规则组表`、`SOP 等级字典表`、`Owner Source 注册表` 和 `报告发布策略表`。其他表要么需要审批，要么工程维护，要么只读审计。
 
 完整治理规则见 [config_governance.md](config_governance.md)。
 
@@ -105,7 +118,7 @@ SOP 注册和 SOP 节点信息可以迁移到飞书多维表格，且这一步�
 - 触达记录表；
 - 案例沉淀表。
 
-## 编译入口
+## 可选本地 Base 记录样例编译
 
 本地表记录样例：
 
@@ -118,7 +131,7 @@ python3 通用能力/review-monitoring-shared/scripts/table_config_compiler.py \
   --sop-id low_efficiency_labeling
 ```
 
-编译结果是现有 orchestrator 可消费的 `sop_config.v1`。只要 lint 通过，就可以直接替代 `--config`：
+编译结果是现有 orchestrator 可消费的 `sop_config.v1`。它用于验证 Base 桥接能力；常规 smoke 和本地验证优先使用 `examples/low_efficiency_sop_config.sample.json`。若需要对比 Base 编译产物，可临时替代 `--config`：
 
 ```bash
 python3 通用能力/monitoring-orchestrator/scripts/run_orchestrator.py \
@@ -129,9 +142,9 @@ python3 通用能力/monitoring-orchestrator/scripts/run_orchestrator.py \
   --dry-run
 ```
 
-## Base 导出和合并入口
+## 可选 Base 导出和合并入口
 
-当前已从 Base 读取以下 10 张配置表：Process Skill、Report Template、SOP 注册、SOP 节点、SOP 指标观测对象、SOP 等级字典、SOP 规则组、报告发布策略、SOP 路由策略和 Owner Source。
+当前保留从 Base 读取以下 10 张配置表的桥接能力：Process Skill、Report Template、SOP 注册、SOP 节点、SOP 指标观测对象、SOP 等级字典、SOP 规则组、报告发布策略、SOP 路由策略和 Owner Source。
 
 ```bash
 export HUMAN_REVIEW_BASE_TOKEN=<runtime_private_base_token>
@@ -143,7 +156,7 @@ python3 通用能力/review-monitoring-shared/scripts/export_base_sop_config.py 
   --mode shadow
 ```
 
-合并后的配置可直接进入 orchestrator shadow：
+合并后的配置只建议进入 orchestrator shadow 或单目标 canary，不作为默认生产配置来源：
 
 ```bash
 python3 通用能力/monitoring-orchestrator/scripts/run_orchestrator.py \
@@ -168,18 +181,19 @@ python3 通用能力/monitoring-orchestrator/scripts/run_orchestrator.py \
 - 真实低效策略 run 目录验证：`full_base_real_low_efficiency_shadow_with_writeback_preview/` 已完成 shadow，409 条命中全部路由到默认 owner，`missing_owner_count=0`。
 - 写回预览：`state_writeback_preview.json` 仅生成本地计划，`write_enabled=false`，不会写事件表或触达记录表。
 
-## 迁移顺序
+## 后续降级与保留顺序
 
-1. 在测试 Base 建表，只写配置记录，不接 orchestrator。
-2. 导出配置记录为本地 JSON，运行 `table_config_compiler.py --lint`。
-3. 用编译后的 `sop_config.v1` 跑一次 shadow，对比现有 JSON 配置结果。
-4. 通过后把编译产物作为 canary 的只读配置输入。
-5. 连续通过后，再把 Base 导出/编译步骤接入发布流程。
-6. 最后再评估 orchestrator 是否需要直接接 Base 读取器。
+1. 本地 `sop_config.v1` 作为默认运行配置，Skill 内维护报告结构、卡片模板、变量契约和校验逻辑。
+2. `tools/smoke_low_efficiency_sop_template.py` 默认验证本地配置，不读取 Base。
+3. Base 控制面仅保留少量业务意图字段：开关、运行模式、触达范围、固定群/owner source、发布策略和审计记录。
+4. 若 Base 发生变更，必须先导出为本地 JSON，运行 `table_config_compiler.py --lint` 和 orchestrator shadow。
+5. shadow 通过后，才允许把编译产物作为单目标 canary 的只读输入。
+6. 不再规划 orchestrator 运行时直接读取 Base；确有需要时必须重新评审权限、分页、字段类型和回滚风险。
 
 ## 强约束
 
-- Base 配置表是配置中心，不能写入运行态探针数据。
+- Base 控制面不是默认运行配置主路径，不能承载复杂执行逻辑、报告正文模板、卡片布局或变量渲染规则。
+- Base 配置表不能写入运行态探针数据。
 - `active` / `touch_execute` 不因表化配置自动放开，仍受 live guard 和授权文件控制。
 - 配置变更必须先通过 `config_linter.py`，blocker/error 不得进入取数、触达或写回。
 - 真实 Base token 仍只能来自运行环境变量或私有配置，不写入 Git。

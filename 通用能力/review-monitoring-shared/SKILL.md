@@ -1,11 +1,11 @@
 ---
 name: review-monitoring-shared
-description: 人审运营监控体系公共底座。Invoke when other monitoring skills need Base schema, shared redlines, card validation, or run gates.
+description: 人审运营监控体系公共底座。Invoke when other monitoring skills need sop_config.v1 samples, shared redlines, card validation, config lint, optional Base schema, or run gates.
 metadata:
-  version: "0.2.2"
+  version: "0.2.3"
   author: 李中涛
   status: MVP
-  tags: [人审运营, 监控体系, 公共底座, 配置中心, 飞书多维表格]
+  tags: [人审运营, 监控体系, 公共底座, Skill-first, sop_config, 可选Base控制面]
   requires:
     bins: ["python3"]
     siblings: []
@@ -18,7 +18,7 @@ metadata:
 
 ## 定位（一句话）
 
-**「一处维护、全体一致」** ——配置中心、schema、校验脚本、通用红线只在这里改一次，所有依赖它的监控 skill 自动对齐。
+**「一处维护、全体一致」** ——运行配置契约、schema、校验脚本、通用红线只在这里改一次，所有依赖它的监控 skill 自动对齐。
 
 ## 谁依赖本 skill
 
@@ -39,24 +39,28 @@ requires:
 
 | 资产 | 路径 | 作用 |
 |---|---|---|
-| 配置中心 & schema | [references/base_schema.md](references/base_schema.md) | base_token=`<BASE_TOKEN>`；数据源/指标注册/撞线规则/等级字典/责任路由/触达模板/触达记录/事件/案例沉淀等表结构 |
+| 可选 Base schema | [references/base_schema.md](references/base_schema.md) | base_token=`<BASE_TOKEN>`；仅用于运营控制面、运行审计面和历史兼容表结构说明，不作为默认运行配置入口 |
 | 卡片一致性校验脚本 | [scripts/card_validator.py](scripts/card_validator.py) | 命中数据顺序无关 SHA256、`embed_hash_in_card` 写入 `_meta._data_hash`、发送前三重硬校验（哈希/等级/chat_id 一致）。 |
 | SOP-first 配置校验脚本 | [scripts/config_linter.py](scripts/config_linter.py) | 校验 SOP 注册、等级字典、process/report registry、Owner Source、route grain、shadow 自动发送红线，并输出 `validation_report.v1`。 |
-| SOP-first 表化配置编译器 | [scripts/table_config_compiler.py](scripts/table_config_compiler.py) | 将 Base 表记录导出编译为 orchestrator 可消费的 `sop_config.v1`，并可串联 `config_linter.py` 做上线前校验。 |
-| Base SOP 配置导出合并脚本 | [scripts/export_base_sop_config.py](scripts/export_base_sop_config.py) | 从原 Base 的 SOP-first 配置表导出配置，合并到现有 JSON 配置并执行 lint。 |
+| 可选 Base 记录编译器 | [scripts/table_config_compiler.py](scripts/table_config_compiler.py) | 将 Base 表记录导出编译为 orchestrator 可消费的 `sop_config.v1`，仅作为桥接/兼容入口使用。 |
+| 可选 Base 导出合并脚本 | [scripts/export_base_sop_config.py](scripts/export_base_sop_config.py) | 从原 Base 的 SOP-first 配置表导出配置，合并到本地 `sop_config.v1` 并执行 lint。 |
 | 低效策略 SOP 样例配置 | [examples/low_efficiency_sop_config.sample.json](examples/low_efficiency_sop_config.sample.json) | 可用于 `monitoring-orchestrator` report-only/shadow MVP 的样例配置，覆盖 process registry、report policy、Owner Source 和低效策略 SOP。 |
-| 低效策略表化配置样例 | [examples/low_efficiency_table_config_records.sample.json](examples/low_efficiency_table_config_records.sample.json) | 模拟从 Base 配置表导出的记录结构，覆盖 SOP 注册、SOP 节点、等级、规则、报告和路由策略。 |
-| 表化配置迁移说明 | [references/table_driven_configuration.md](references/table_driven_configuration.md) | 定义 SOP 注册/节点迁移到 Base 的物理表、编译入口、迁移顺序和强约束。 |
+| 低效策略 Base 导出样例 | [examples/low_efficiency_table_config_records.sample.json](examples/low_efficiency_table_config_records.sample.json) | 模拟从 Base 控制面导出的记录结构，用于验证桥接编译能力，不是默认运行入口。 |
+| Base 控制面桥接说明 | [references/table_driven_configuration.md](references/table_driven_configuration.md) | 定义 Base 作为可选控制面的边界、编译入口、迁移/降级顺序和强约束。 |
 | 配置治理与运营维护手册 | [references/config_governance.md](references/config_governance.md) | 定义每张 Base 表的表类型标签、当前定位、谁来维护、运营视图和旧表迁移策略。 |
 | Base 表使用排查报告 | [references/base_table_usage_audit.md](references/base_table_usage_audit.md) | 对 20 张 Base 表逐一标记当前是否被代码读取/写入、是否进入编译、是否 legacy 或预留。 |
 | 跑批踩坑规避清单 | [references/dry_run_pitfalls.md](references/dry_run_pitfalls.md) | 首次端到端干运行复盘的坑规避动作 + 环境/配置/数据/SQL/取数/字段/dry_run/门禁八道 gate |
 
-## 配置中心（飞书多维表格）
+## 默认本地配置与可选 Base 控制面
+
+默认运行配置是仓库内的 `sop_config.v1` JSON，例如 [examples/low_efficiency_sop_config.sample.json](examples/low_efficiency_sop_config.sample.json)。`monitoring-orchestrator`、`owner-routing` 和 `anomaly-touch` 都应优先读取该配置及 Skill 内模板。
+
+飞书多维表格不作为默认运行依赖，只保留为可选的运营控制面、运行态审计面和历史兼容资产：
 
 - base_token：`<BASE_TOKEN>`（当前体系共用同一个 base；真实值应放在私有配置或运行环境中，定位与是否按业务模块拆分待后续明确）
 - 完整字段结构见 [base_schema.md](references/base_schema.md)。
 
-| 表 | table_id | 作用 |
+| 表 | table_id | 作为 Base 控制/审计面时的作用 |
 |---|---|---|
 | 数据源表 | `tblykQRCZjiqdhX5` | 数据从哪来、字段口径、就绪校验 |
 | 指标注册表 | `tblKsDBLYwSHSNwm` | 有哪些指标（主配置表） |
@@ -105,7 +109,7 @@ requires:
 
 ## 与业务 skill 的边界
 
-- 本 skill **只提供公共资产**：schema、校验脚本、通用红线、配置中心索引。
+- 本 skill **只提供公共资产**：`sop_config.v1` 契约、可选 Base schema、校验脚本和通用红线。
 - **不含**任何指标口径、阈值、SQL 模板、分级规则、路由/触达/编排逻辑——这些分别归纵向业务 skill 与横向能力 skill。
 
 ## SOP-first 配置校验入口
@@ -121,9 +125,9 @@ python3 scripts/config_linter.py \
 
 通过条件：`summary.status=passed`。若输出 blocker/error，编排层必须停止在 `config_lint`，不得继续取数、发布或触达。
 
-## SOP-first 表化配置编译入口
+## 可选 Base 记录编译入口
 
-SOP 注册、节点、等级、规则、报告策略和路由策略迁移到 Base 后，先导出为本地 JSON，再编译为现有编排器可消费的 `sop_config.v1`：
+只有在需要验证 Base 控制面桥接能力时，才把 SOP 注册、节点、等级、规则、报告策略和路由策略导出为本地 JSON，再编译为编排器可消费的 `sop_config.v1`：
 
 ```bash
 python3 scripts/table_config_compiler.py \
@@ -134,11 +138,11 @@ python3 scripts/table_config_compiler.py \
   --sop-id low_efficiency_labeling
 ```
 
-编译通过且 `config_linter.py` 返回 `summary.status=passed` 后，才允许把编译产物作为 `monitoring-orchestrator --config` 输入。
+编译通过且 `config_linter.py` 返回 `summary.status=passed` 后，才允许把编译产物作为 `monitoring-orchestrator --config` 的临时输入。常规 smoke 与本地验证仍优先使用 `examples/low_efficiency_sop_config.sample.json`。
 
-## Base SOP 配置导出入口
+## 可选 Base SOP 配置导出入口
 
-当前阶段从 Base 读取 SOP-first 配置表，合并为 orchestrator 可消费的 `sop_config.v1`：
+当确实需要从 Base 控制面读取配置时，使用以下脚本把 SOP-first 配置表合并为 orchestrator 可消费的 `sop_config.v1`。这不是默认运行路径：
 
 ```bash
 export HUMAN_REVIEW_BASE_TOKEN=<runtime_private_base_token>

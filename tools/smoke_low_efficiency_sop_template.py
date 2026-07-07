@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Offline smoke test for table-driven low-efficiency SOP report generation.
+"""Offline smoke test for low-efficiency SOP report generation.
 
-This script validates the report-generation path that matters for the Base
-SOP template:
+The default path is local/Skill-first:
 
-1. compile table-shaped SOP config records into sop_config.v1;
-2. lint the compiled config;
+1. read a local sop_config.v1 config from review-monitoring-shared/examples;
+2. lint the config;
 3. verify registered report templates point to local template files;
 4. run monitoring-orchestrator in shadow mode;
 5. assert report card artifacts and publish summary are generated offline.
+
+Pass --table-export only when you explicitly want to validate the optional
+Lark Base control-plane export path.
 
 It does not send Lark messages and does not write Base records.
 """
@@ -40,7 +42,7 @@ from table_config_compiler import compile_table_config  # noqa: E402
 from run_orchestrator import OrchestratorRun  # noqa: E402
 
 
-DEFAULT_TABLE_EXPORT = SHARED_DIR / "examples" / "low_efficiency_table_config_records.sample.json"
+DEFAULT_CONFIG = SHARED_DIR / "examples" / "low_efficiency_sop_config.sample.json"
 DEFAULT_PROCESS_RUN_DIR = ORCHESTRATOR_DIR / "examples" / "low_efficiency_run"
 SOP_ID = "low_efficiency_labeling"
 REPORT_TYPE = "low_efficiency_grading"
@@ -89,25 +91,25 @@ def assert_report_templates_registered(config: dict[str, Any], process_run_dir: 
     if REPORT_TYPE not in by_type:
         raise AssertionError(f"missing report template registration for {REPORT_TYPE}")
 
-    checked: list[dict[str, Any]] = []
-    for item in registry:
-        if not isinstance(item, dict) or not item.get("enabled", True):
+    item = by_type[REPORT_TYPE]
+    if not item.get("enabled", True):
+        raise AssertionError(f"report template registration for {REPORT_TYPE} is disabled")
+
+    local_template_name = item.get("local_template_name")
+    if local_template_name:
+        assert_file(ANOMALY_TOUCH_DIR / "templates" / str(local_template_name))
+    for artifact in item.get("required_artifacts", []):
+        if "{" in str(artifact):
             continue
-        local_template_name = item.get("local_template_name")
-        if local_template_name:
-            assert_file(ANOMALY_TOUCH_DIR / "templates" / str(local_template_name))
-        for artifact in item.get("required_artifacts", []):
-            if "{" in str(artifact):
-                continue
-            assert_file(process_run_dir / str(artifact))
-        checked.append(
-            {
-                "report_type": item.get("report_type"),
-                "template_name": item.get("template_name"),
-                "local_template_name": local_template_name,
-            }
-        )
-    return checked
+        assert_file(process_run_dir / str(artifact))
+
+    return [
+        {
+            "report_type": item.get("report_type"),
+            "template_name": item.get("template_name"),
+            "local_template_name": local_template_name,
+        }
+    ]
 
 
 def assert_card_outputs(output_dir: Path) -> dict[str, Any]:
@@ -146,25 +148,34 @@ def assert_card_outputs(output_dir: Path) -> dict[str, Any]:
     }
 
 
-def run_smoke(table_export: Path, process_run_dir: Path, output_dir: Path) -> dict[str, Any]:
-    assert_file(table_export)
+def load_config(config_path: Path, table_export: Path | None, output_dir: Path) -> tuple[dict[str, Any], Path, str]:
+    if table_export is not None:
+        assert_file(table_export)
+        config = compile_table_config(read_json(table_export))
+        compiled_config_path = output_dir / "compiled_sop_config.json"
+        write_json(compiled_config_path, config)
+        return config, compiled_config_path, "base_table_export"
+
+    assert_file(config_path)
+    return read_json(config_path), config_path, "local_sop_config"
+
+
+def run_smoke(config_path: Path, table_export: Path | None, process_run_dir: Path, output_dir: Path) -> dict[str, Any]:
     assert_file(process_run_dir / "summary.json")
     assert_file(process_run_dir / "综合.csv")
 
-    config = compile_table_config(read_json(table_export))
-    compiled_config_path = output_dir / "compiled_sop_config.json"
-    write_json(compiled_config_path, config)
+    config, effective_config_path, config_source = load_config(config_path, table_export, output_dir)
 
     lint_report = validation_report(config, mode="shadow", sop_id=SOP_ID)
     write_json(output_dir / "validation_report.json", lint_report)
     if lint_report["summary"]["status"] != "passed":
-        raise AssertionError(f"compiled config lint failed: {json.dumps(lint_report, ensure_ascii=False)}")
+        raise AssertionError(f"config lint failed: {json.dumps(lint_report, ensure_ascii=False)}")
 
     checked_templates = assert_report_templates_registered(config, process_run_dir)
 
     orchestrator_output_dir = output_dir / "orchestrator_shadow"
     run = OrchestratorRun(
-        config_path=compiled_config_path,
+        config_path=effective_config_path,
         config=config,
         sop_id=SOP_ID,
         run_mode="shadow",
@@ -188,10 +199,12 @@ def run_smoke(table_export: Path, process_run_dir: Path, output_dir: Path) -> di
     result = {
         "schema_version": "low_efficiency_sop_template_smoke.v1",
         "status": "passed",
-        "table_export": str(table_export),
+        "config_source": config_source,
+        "config_path": str(config_path),
+        "table_export": str(table_export) if table_export else None,
         "process_run_dir": str(process_run_dir),
         "output_dir": str(output_dir),
-        "compiled_config": str(compiled_config_path),
+        "effective_config": str(effective_config_path),
         "validation_summary": lint_report["summary"],
         "checked_report_templates": checked_templates,
         "orchestrator_summary": str(orchestrator_output_dir / "run_summary.json"),
@@ -202,8 +215,13 @@ def run_smoke(table_export: Path, process_run_dir: Path, output_dir: Path) -> di
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Smoke test table-driven low-efficiency SOP report generation.")
-    parser.add_argument("--table-export", type=Path, default=DEFAULT_TABLE_EXPORT)
+    parser = argparse.ArgumentParser(description="Smoke test low-efficiency SOP report generation.")
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Local sop_config.v1 JSON. Default is Skill-first.")
+    parser.add_argument(
+        "--table-export",
+        type=Path,
+        help="Optional Base table export JSON. When set, it is compiled and used instead of --config.",
+    )
     parser.add_argument("--process-run-dir", type=Path, default=DEFAULT_PROCESS_RUN_DIR)
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "dist" / "smoke_low_efficiency_sop_template" / utc_stamp())
     return parser.parse_args()
@@ -213,7 +231,8 @@ def main() -> int:
     args = parse_args()
     try:
         result = run_smoke(
-            table_export=args.table_export.resolve(),
+            config_path=args.config.resolve(),
+            table_export=args.table_export.resolve() if args.table_export else None,
             process_run_dir=args.process_run_dir.resolve(),
             output_dir=args.output_dir.resolve(),
         )
